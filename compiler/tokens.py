@@ -7,12 +7,12 @@ KEYWORDS = {
 
 # Token types — used by the lexer
 TOKEN_TYPES = {
-    "NUMBER",
-    "IDENTIFIER",
-    "KEYWORD",
-    "PLUS", "MINUS", "STAR", "SLASH",
-    "EQUALS",
-    "LPAREN", "RPAREN",
-    "NEWLINE",
-    "EOF"
+    "tok_NUMBER",
+    "tok_IDENTIFIER",
+    "tok_KEYWORD",
+    "tok_PLUS", "tok_MINUS", "tok_STAR", "tok_SLASH",
+    "tok_EQUALS",
+    "tok_LPAREN", "tok_RPAREN",
+    "tok_NEWLINE",
+    "tok_EOF"
 }
