@@ -1,25 +1,34 @@
-# compiler/lexer.py
 
 import re
 from compiler.tokens import KEYWORDS
 
-# List of token patterns
 TOKEN_SPEC = [
-    ('tok_NUMBER',     r'\d+'),
-    ('tok_IDENTIFIER', r'[A-Za-z_][A-Za-z0-9_]*'),
-    ('tok_PLUS',       r'\+'),
-    ('tok_MINUS',      r'-'),
-    ('tok_STAR',       r'\*'),
-    ('tok_SLASH',      r'/'),
-    ('tok_EQUALS',     r'='),
-    ('tok_LPAREN',     r'\('),
-    ('tok_RPAREN',     r'\)'),
-    ('tok_NEWLINE',    r'\n'),
-    ('tok_SKIP',       r'[ \t]+'),   # Whitespace (to ignore)
-    ('tok_MISMATCH',   r'.'),        # Any other character (to flag errors)
+    ('tok_chiffre',     r'\d+'),
+    ('tok_identifiant', r'[A-Za-z_][A-Za-z0-9_]*'),
+    ('tok_+', r'\+'),
+    ('tok_-', r'-'),
+    ('tok_*', r'\*'),
+    ('tok_/', r'/'),
+    ('tok_=',r'='),
+    ('tok_(', r'\('),
+    ('tok_)',  r'\)'),
+    ('tok_\n', r'\n'),
+    ('tok_espace',       r'[ \t]+'),   
+    ('tok_MISMATCH',   r'.'),     
+    ("tok_{",r'\{'),
+    ( "tok_}",r'\}'),
+    ("tok_[",r'\['),
+    ("tok_]",r'\]'),
+    ("tok_;",r'\;'),
+    ("tok_&",r'\&'),
+    ("tok_&&",r'&&'),
+    ("tok_!=",r'!'),
+    ("tok_||",r'||'),
+    ("tok_==",r'=='),
+    ("tok_!",r'\+'),
+    ("tok_%", r'\+'),  
 ]
 
-# Combine all token patterns into a single regex
 TOKEN_REGEX = '|'.join(f'(?P<{name}>{pattern})' for name, pattern in TOKEN_SPEC)
 
 
@@ -42,5 +51,5 @@ def tokenize(code):
         else:
             tokens.append((kind, value))
 
-    tokens.append(('tok_EOF', ''))  # End of input
+    tokens.append(('tok_EOF', ''))  
     return tokens

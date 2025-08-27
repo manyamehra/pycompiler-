@@ -1,18 +1,36 @@
-# compiler/tokens.py
 
-# Keywords in your mini Python
-KEYWORDS = {
+Identifiant = {
     "if", "else", "while", "def", "return", "True", "False", "None"
 }
 
-# Token types — used by the lexer
 TOKEN_TYPES = {
-    "tok_NUMBER",
-    "tok_IDENTIFIER",
-    "tok_KEYWORD",
-    "tok_PLUS", "tok_MINUS", "tok_STAR", "tok_SLASH",
-    "tok_EQUALS",
-    "tok_LPAREN", "tok_RPAREN",
-    "tok_NEWLINE",
-    "tok_EOF"
+    "tok_chiffre",
+    "tok_identifiant",
+    "tok_motscle",
+    "tok_+",
+    "tok_-",
+    "tok_*",
+    "tok_/",
+    "tok_=",
+    "tok_(", 
+    "tok_)",
+    "tok_\n",
+    "tok_>",
+    "tok_<",
+    "tok_>=",
+    "tok_<=",
+    "tok_EOF",
+    "tok_{",
+    "tok_}",
+    "tok_[",
+    "tok_]",
+    "tok_;",
+    "tok_&",
+    "tok_&&",
+    "tok_!=",
+    "tok_||",
+    "tok_==",
+    "tok_!",
+    "tok_%",
+
 }
