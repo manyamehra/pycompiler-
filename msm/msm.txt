@@ -1,0 +1,114 @@
+
+Jeu d'instructions:
+===================
+
+  halt
+    Termine l'exécution du programme.
+
+Manipulation de la pile:
+------------------------
+
+  drop [int]
+    Supprime les n éléments au sommet de la pile.
+
+  dup
+    Empile une copie de l'élément au sommet de la pile.
+
+  swap
+    Inverse les deux éléments au sommet de la pile.
+
+  push [int]
+    Empile une constante entière au sommet de la pile.
+
+  get [int]
+    Empile une copie de la N-ième valeur depuis la base de la pile au sommet de
+    celle-ci.
+
+  set [int]
+    Dépile la valeur au sommet de la pile et l'affecte à la N-ième valeur depuis
+    la base de la pile.
+
+Accès à la mémoire:
+-------------------
+
+  read
+    Dépile une adresse mémoire, puis empile le contenu de la case mémoire à
+    cette adresse.
+
+  write
+    Dépile une valeur puis une adresse. Affecte la valeur à la case mémoire
+    indiquée par l'adresse.
+    
+
+Arithmétique et logique:
+------------------------
+
+  add / sub / mul / div / mod
+    Dépile deux valeurs du haut de la pile, applique l'opération correspondante
+    et empile le résultat. Attention, pour réaliser l'opération A-B par
+    exemple, la valeur de A doit être empilée en premier suivie de la valeur de
+    B.
+
+  not
+    Négation logique du sommet de la pile. Dépile une valeur puis empile 0 si
+    cette dernière est non-nulle et 1 sinon.
+
+  and / or
+    réalise l'operation logique entre les deux valeurs au sommet de la pile.
+
+Comparaisons:
+-------------
+
+  cmpeq / cmpne / cmplt / cmple / cmpgt / cmpge
+    Dépile deux valeurs du sommet de la pile et empile le résultat de la
+    comparaison des deux :
+        cmpeq  ->  A == B
+        cmpne  ->  A != B
+        cmplt  ->  A <  B
+        cmple  ->  A <= B
+        cmpgt  ->  A >  B
+        cmpge  ->  A >= B
+
+Branchements:
+-------------
+
+  jump [label]
+    Saut inconditionel à l'adresse indiquée.
+
+  jumpt / jumpf [label]
+    Saut conditionel. Dépile une valeur entière du sommet de la pile, si elle
+    est differente (resp. egale) de zéro, saute à l'adresse indiquée, sinon
+    continue l'exécution à l'instruction suivante.
+
+Appels de fonctions:
+--------------------
+
+  prep [label]
+    Prépare un appel à la fonction [label]. Réserve deux emplacements au sommet
+    de la pile.
+
+  call [int]
+    Réalise l'appel à la fonction préparée par une instruction 'prep' dont les
+    [int] arguments ont étés empilés.
+
+  ret
+    Retourne depuis une fonction en renvoyant la valeur au sommet de la pile.
+    Réinitialise la pile dans l'état ou elle était au moment de l'instruction
+    prep correspondante et empile la valeur résultat.
+
+  resn [int]
+    Réserve [int] emplacement sur la pile. Typiquement pour les variables
+    locales.
+
+
+Communication:
+--------------
+
+  send:
+    Dépile la valeur au sommet de la pile et l'envoie sur la console sous la
+    forme d'un octet interprété comme un caractère.
+
+
+  recv:
+    Empile un entier sur la pile correspondant au prochain octet lu depuis la
+    console.
