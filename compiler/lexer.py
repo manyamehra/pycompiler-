@@ -12,8 +12,7 @@ TOKEN_SPEC = [
     ('tok_egal',r'='),
     ('tok_lparen', r'\('),
     ('tok_rparen',  r'\)'),
-    ('tok_espace', r'[ \t]+'),   
-    ('tok_MISMATCH',   r'.'), 
+    ('tok_espace', r'[ \t]+'),    
     ('tok_NEWLINE', r'\n'),
     ("tok_lcurly",r'\{'),
     ( "tok_rcurly",r'\}'),
@@ -26,7 +25,9 @@ TOKEN_SPEC = [
     ("tok_pipe",r'||'),
     ("tok_equalto",r'=='),
     ("tok_not",r'\+'),
-    ("tok_pecent", r'\+'),  
+    ("tok_pecent", r'\+'), 
+    ("tok_colon", r'\:'),
+    ('tok_MISMATCH',   r'.'),
 ]
 
 TOKEN_REGEX = '|'.join(f'(?P<{name}>{pattern})' for name, pattern in TOKEN_SPEC)
