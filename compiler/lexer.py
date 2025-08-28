@@ -13,8 +13,8 @@ TOKEN_SPEC = [
     ('tok_(', r'\('),
     ('tok_)',  r'\)'),
     ('tok_\n', r'\n'),
-    ('tok_espace',       r'[ \t]+'),   
-    ('tok_MISMATCH',   r'.'),     
+    ('tok_espace', r'[ \t]+'),   
+    ('tok_MISMATCH',   r'.'), 
     ("tok_{",r'\{'),
     ( "tok_}",r'\}'),
     ("tok_[",r'\['),
@@ -40,9 +40,7 @@ def tokenize(code):
         kind = match.lastgroup
         value = match.group()
 
-        if kind == 'tok_SKIP':
-            continue
-        elif kind == 'tok_NEWLINE':
+        if kind == 'tok_NEWLINE':
             line_num += 1
         elif kind == 'tok_MISMATCH':
             raise SyntaxError(f"Unexpected character '{value}' on line {line_num}")
