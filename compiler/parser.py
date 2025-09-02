@@ -235,4 +235,56 @@ if __name__ == "__main__":
     arbre7.afficher()
     print()
 
+
+def gennode(A):
+    """
+    Recursively generate instructions for a node A (AST).
+    Simulates a simple stack-based code generation.
+    """
+    if A.type == "nd_const":
+        # Push constant value onto stack
+        print("push", A.valeur)
+
+    elif A.type == "nd_not":
+        # Generate code for child first
+        gennode(A.enfant[0])
+        # Apply logical NOT
+        print("not")
+
+    elif A.type == "nd_neg":
+        # Generate code for child first
+        gennode(A.enfant[0])
+        # Apply unary minus
+        print("neg")
+
+    elif A.type == "nd_add":
+        # Binary addition
+        gennode(A.enfant[0])
+        gennode(A.enfant[1])
+        print("add")
+
+    elif A.type == "nd_sub":
+        # Binary subtraction
+        gennode(A.enfant[0])
+        gennode(A.enfant[1])
+        print("sub")
+
+    elif A.type == "nd_mul":
+        # Binary multiplication
+        gennode(A.enfant[0])
+        gennode(A.enfant[1])
+        print("mul")
+
+    elif A.type == "nd_div":
+        # Binary division
+        gennode(A.enfant[0])
+        gennode(A.enfant[1])
+        print("div")
+
+    elif A.type == "nd_ident":
+        # Push the value of a variable (simplified)
+        print("load", A.chaine)
+
+    else:
+        raise ValueError(f"Unknown node type: {A.type}")
     
