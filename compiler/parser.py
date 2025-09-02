@@ -136,6 +136,55 @@ class Parser:
             raise SyntaxError(f"Expression attendue, reçu: {token[0]} à la ligne {self.lexer.line}")
 
 
+if __name__ == "__main__":
+    
+    print("\nTest 1: 42")
+    lexer1 = Lexer("42")
+    parser1 = Parser(lexer1)
+    arbre1 = parser1.E()
+    arbre1.afficher()
+    print()
+    
+    print("\nTest 2: (123)")
+    lexer2 = Lexer("(123)")
+    parser2 = Parser(lexer2)
+    arbre2 = parser2.E()
+    arbre2.afficher()
+    print()
+    
+    print("\nTest 3: -42")
+    lexer3 = Lexer("-42")
+    parser3 = Parser(lexer3)
+    arbre3 = parser3.E()
+    arbre3.afficher()
+    print()
+    
+    print("\nTest 4: !True")
+    lexer4 = Lexer("!True")
+    parser4 = Parser(lexer4)
+    arbre4 = parser4.E()
+    arbre4.afficher()
+    print()
+    
+    
+    print("\nTest 5: 12 + 34")
+    lexer5 = Lexer("12 + 34")
+    arbre5 = parser5.E()
+    arbre5.afficher()
+    print()
+    
+    print("\nTest 6: 12 + 3 * 5")
+    lexer6 = Lexer("12 + 3 * 5")
+    arbre6 = parser6.E()
+    arbre6.afficher()
+    print()
+    
+    print("\nTest 7: -(12 + 3) * 5")
+    lexer7 = Lexer("-(12 + 3) * 5")
+    arbre7 = parser7.E()
+    arbre7.afficher()
+    print()
+
 
 BINOPS = {
     "tok_plus":   (10, "L", ND_ADD),
@@ -187,6 +236,7 @@ class ParserOptimise(Parser):
         return self.A()  
 
 def gennode(A):
+    
     if A.type == "nd_const":
         print("push", A.valeur)
 
