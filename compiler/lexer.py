@@ -7,34 +7,41 @@ KEYWORDS = {
 }
 # --- Spécification (les opérateurs à 2 chars AVANT ceux à 1 char) ---
 TOKEN_SPEC = [
-    ("tok_equalto",   r"=="),
-    ("tok_notequal",  r"!="),
-    ("tok_AND",       r"&&"),
-    ("tok_OR",        r"\|\|"),
+    # --- 2 caractères d’abord ---
+    ("tok_ge",       r">="),
+    ("tok_le",       r"<="),
+    ("tok_equalto",  r"=="),
+    ("tok_notequal", r"!="),
+    ("tok_AND",      r"&&"),
+    ("tok_OR",       r"\|\|"),
 
-    ("tok_plus",      r"\+"),
-    ("tok_minus",     r"-"),
-    ("tok_star",      r"\*"),
-    ("tok_slash",     r"/"),
-    ("tok_percent",   r"%"),
-    ("tok_not",       r"!"),
-    ("tok_egal",      r"="),
-    ("tok_lparen",    r"\("),
-    ("tok_rparen",    r"\)"),
-    ("tok_lcurly",    r"\{"),
-    ("tok_rcurly",    r"\}"),
-    ("tok_lbrack",    r"\["),
-    ("tok_rbrack",    r"\]"),
-    ("tok_semicolon", r";"),
-    ("tok_colon",     r":"),
+    # --- 1 caractère ensuite ---
+    ("tok_gt",       r">"),
+    ("tok_lt",       r"<"),
+    ("tok_plus",     r"\+"),
+    ("tok_minus",    r"-"),
+    ("tok_star",     r"\*"),
+    ("tok_slash",    r"/"),
+    ("tok_percent",  r"%"),
+    ("tok_not",      r"!"),
+    ("tok_egal",     r"="),
+    ("tok_lparen",   r"\("),
+    ("tok_rparen",   r"\)"),
+    ("tok_lcurly",   r"\{"),
+    ("tok_rcurly",   r"\}"),
+    ("tok_lbrack",   r"\["),
+    ("tok_rbrack",   r"\]"),
+    ("tok_semicolon",r";"),
+    ("tok_colon",    r":"),
 
     ("tok_chiffre",     r"\d+"),
     ("tok_identifiant", r"[A-Za-z_][A-Za-z0-9_]*"),
 
-    ("tok_espace",    r"[ \t]+"),
-    ("tok_NEWLINE",   r"\n"),
-    ("tok_MISMATCH",  r"."),
+    ("tok_espace",   r"[ \t]+"),
+    ("tok_NEWLINE",  r"\n"),
+    ("tok_MISMATCH", r"."),
 ]
+
 
 # Méga-regex avec groupes nommés
 MASTER_RE = re.compile("|".join(f"(?P<{n}>{p})" for n, p in TOKEN_SPEC))
