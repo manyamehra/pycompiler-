@@ -1,16 +1,9 @@
 from lexer import Lexer
 
-# --- Structure de nœud selon les notes de cours ---
 
 class Nd:
-    """
-    Structure de nœud d'arbre selon les notes:
-    - type: type du nœud
-    - valeur: valeur si c'est une constante
-    - chaine: chaîne si nécessaire
-    - nbEnfant: nombre d'enfants
-    - enfant: liste des enfants
-    """
+
+
     def __init__(self, node_type, valeur=None, chaine=None):
         self.type = node_type
         self.valeur = valeur
@@ -37,7 +30,6 @@ class Nd:
         
         print(")", end="")
 
-# --- Types de nœuds (préfixés avec nd_) ---
 ND_CONST = "nd_const"
 ND_NOT = "nd_not"
 ND_NEG = "nd_neg"
@@ -47,7 +39,6 @@ ND_MUL = "nd_mul"
 ND_DIV = "nd_div"
 ND_IDENT = "nd_ident"
 
-# --- Fonctions utilitaires pour créer des nœuds ---
 
 def node_v(node_type, valeur):
     """Crée un nœud avec une valeur"""
@@ -66,18 +57,9 @@ def node_2(node_type, enfant1, enfant2):
     node.ajouter_enfant(enfant2)
     return node
 
-# --- Parser selon les notes de cours ---
 
 class Parser:
-    """
-    Parser basé sur les notes de cours
-    Grammaire:
-    E -> P
-    P -> S | !P | -P | +P
-    S -> A
-    A -> nb | (E)
-    """
-    
+
     def __init__(self, lexer):
         self.lexer = lexer
         self.last = None  # dernier token lu
@@ -101,14 +83,7 @@ class Parser:
         return self.P()
     
     def P(self):
-        """
-        P -> S | !P | -P | +P
-        Selon les notes:
-        - !P -> not avec P comme enfant
-        - -P -> neg avec P comme enfant  
-        - +P -> juste P (pas de nœud)
-        - sinon -> S
-        """
+
         if self.check("tok_not"):
             self.accept("tok_not")
             n = self.P()
@@ -120,7 +95,7 @@ class Parser:
         
         elif self.check("tok_plus"):
             self.accept("tok_plus")
-            return self.P()  # +P -> P (pas de nœud spécial)
+            return self.P()  
         
         else:
             return self.S()
@@ -160,11 +135,9 @@ class Parser:
             token = self.lexer.peek()
             raise SyntaxError(f"Expression attendue, reçu: {token[0]} à la ligne {self.lexer.line}")
 
-# --- Extension pour les opérations binaires (optionnel) ---
 
 class ParserEtendu(Parser):
     """
-    Version étendue qui gère aussi les opérations binaires
     E -> T ((+|-) T)*
     T -> F ((*|/) F)*  
     F -> P
@@ -209,12 +182,9 @@ class ParserEtendu(Parser):
         """F -> P"""
         return self.P()
 
-# --- Tests selon les notes ---
 
 if __name__ == "__main__":
-    print("=== Test Parser Simple (selon notes) ===")
     
-    # Test 1: Constante simple
     print("\nTest 1: 42")
     lexer1 = Lexer("42")
     parser1 = Parser(lexer1)
@@ -222,7 +192,6 @@ if __name__ == "__main__":
     arbre1.afficher()
     print()
     
-    # Test 2: Expression avec parenthèses
     print("\nTest 2: (123)")
     lexer2 = Lexer("(123)")
     parser2 = Parser(lexer2)
@@ -230,7 +199,6 @@ if __name__ == "__main__":
     arbre2.afficher()
     print()
     
-    # Test 3: Négation
     print("\nTest 3: -42")
     lexer3 = Lexer("-42")
     parser3 = Parser(lexer3)
@@ -238,7 +206,6 @@ if __name__ == "__main__":
     arbre3.afficher()
     print()
     
-    # Test 4: NOT
     print("\nTest 4: !True")
     lexer4 = Lexer("!True")
     parser4 = Parser(lexer4)
@@ -246,9 +213,7 @@ if __name__ == "__main__":
     arbre4.afficher()
     print()
     
-    print("\n=== Test Parser Étendu (avec opérations binaires) ===")
     
-    # Test 5: Addition
     print("\nTest 5: 12 + 34")
     lexer5 = Lexer("12 + 34")
     parser5 = ParserEtendu(lexer5)
@@ -256,7 +221,6 @@ if __name__ == "__main__":
     arbre5.afficher()
     print()
     
-    # Test 6: Expression complexe
     print("\nTest 6: 12 + 3 * 5")
     lexer6 = Lexer("12 + 3 * 5")
     parser6 = ParserEtendu(lexer6)
@@ -264,7 +228,6 @@ if __name__ == "__main__":
     arbre6.afficher()
     print()
     
-    # Test 7: Avec parenthèses et négation
     print("\nTest 7: -(12 + 3) * 5")
     lexer7 = Lexer("-(12 + 3) * 5")
     parser7 = ParserEtendu(lexer7)
