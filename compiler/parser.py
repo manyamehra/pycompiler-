@@ -136,106 +136,89 @@ class Parser:
             raise SyntaxError(f"Expression attendue, reçu: {token[0]} à la ligne {self.lexer.line}")
 
 
-if __name__ == "__main__":
-    
-    print("\nTest 1: 42")
-    lexer1 = Lexer("42")
-    parser1 = Parser(lexer1)
-    arbre1 = parser1.E()
-    arbre1.afficher()
-    print()
-    
-    print("\nTest 2: (123)")
-    lexer2 = Lexer("(123)")
-    parser2 = Parser(lexer2)
-    arbre2 = parser2.E()
-    arbre2.afficher()
-    print()
-    
-    print("\nTest 3: -42")
-    lexer3 = Lexer("-42")
-    parser3 = Parser(lexer3)
-    arbre3 = parser3.E()
-    arbre3.afficher()
-    print()
-    
-    print("\nTest 4: !True")
-    lexer4 = Lexer("!True")
-    parser4 = Parser(lexer4)
-    arbre4 = parser4.E()
-    arbre4.afficher()
-    print()
-    
-    
-    print("\nTest 5: 12 + 34")
-    lexer5 = Lexer("12 + 34")
-    parser5 = ParserEtendu(lexer5)
-    arbre5 = parser5.E()
-    arbre5.afficher()
-    print()
-    
-    print("\nTest 6: 12 + 3 * 5")
-    lexer6 = Lexer("12 + 3 * 5")
-    parser6 = ParserEtendu(lexer6)
-    arbre6 = parser6.E()
-    arbre6.afficher()
-    print()
-    
-    print("\nTest 7: -(12 + 3) * 5")
-    lexer7 = Lexer("-(12 + 3) * 5")
-    parser7 = ParserEtendu(lexer7)
-    arbre7 = parser7.E()
-    arbre7.afficher()
-    print()
 
+BINOPS = {
+    "tok_plus":   (10, "L", ND_ADD),
+    "tok_minus":  (10, "L", ND_SUB),
+    "tok_star":   (20, "L", ND_MUL),
+    "tok_slash":  (20, "L", ND_DIV),
+
+}
+
+class ParserOptimise(Parser):
+  
+
+    def E(self, min_prio: int = 0):
+
+        gauche = self.P()
+
+        while True:
+            tok_type, _ = self.lexer.peek()
+            if tok_type not in BINOPS:
+                break
+
+            prec, assoc, nd_type = BINOPS[tok_type]
+            if prec < min_prio:
+                break
+
+            self.accept(tok_type)
+
+            next_min = prec if assoc == "R" else prec + 1
+
+            droite = self.E(next_min)
+
+            gauche = node_2(nd_type, gauche, droite)
+
+        return gauche
+
+    def P(self):
+        if self.check("tok_not"):
+            self.accept("tok_not")
+            return node_1(ND_NOT, self.P())
+        if self.check("tok_minus"):
+            self.accept("tok_minus")
+            return node_1(ND_NEG, self.P())
+        if self.check("tok_plus"):
+            self.accept("tok_plus")
+            return self.P()
+        return self.S()
+
+    def S(self):
+        return self.A()  
 
 def gennode(A):
-    """
-    Recursively generate instructions for a node A (AST).
-    Simulates a simple stack-based code generation.
-    """
     if A.type == "nd_const":
-        # Push constant value onto stack
         print("push", A.valeur)
 
     elif A.type == "nd_not":
-        # Generate code for child first
         gennode(A.enfant[0])
-        # Apply logical NOT
         print("not")
 
     elif A.type == "nd_neg":
-        # Generate code for child first
         gennode(A.enfant[0])
-        # Apply unary minus
         print("neg")
 
     elif A.type == "nd_add":
-        # Binary addition
         gennode(A.enfant[0])
         gennode(A.enfant[1])
         print("add")
 
     elif A.type == "nd_sub":
-        # Binary subtraction
         gennode(A.enfant[0])
         gennode(A.enfant[1])
         print("sub")
 
     elif A.type == "nd_mul":
-        # Binary multiplication
         gennode(A.enfant[0])
         gennode(A.enfant[1])
         print("mul")
 
     elif A.type == "nd_div":
-        # Binary division
         gennode(A.enfant[0])
         gennode(A.enfant[1])
         print("div")
 
     elif A.type == "nd_ident":
-        # Push the value of a variable (simplified)
         print("load", A.chaine)
 
     else:
