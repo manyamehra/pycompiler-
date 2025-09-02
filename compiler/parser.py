@@ -136,53 +136,6 @@ class Parser:
             raise SyntaxError(f"Expression attendue, reçu: {token[0]} à la ligne {self.lexer.line}")
 
 
-class ParserEtendu(Parser):
-    """
-    E -> T ((+|-) T)*
-    T -> F ((*|/) F)*  
-    F -> P
-    P -> S | !P | -P | +P
-    S -> A
-    A -> nb | (E) | identifiant
-    """
-    
-    def E(self):
-        """E -> T ((+|-) T)*"""
-        gauche = self.T()
-        
-        while self.check("tok_plus") or self.check("tok_minus"):
-            if self.check("tok_plus"):
-                self.accept("tok_plus")
-                droite = self.T()
-                gauche = node_2(ND_ADD, gauche, droite)
-            else:  # tok_minus
-                self.accept("tok_minus")
-                droite = self.T()
-                gauche = node_2(ND_SUB, gauche, droite)
-        
-        return gauche
-    
-    def T(self):
-        """T -> F ((*|/) F)*"""
-        gauche = self.F()
-        
-        while self.check("tok_star") or self.check("tok_slash"):
-            if self.check("tok_star"):
-                self.accept("tok_star")
-                droite = self.F()
-                gauche = node_2(ND_MUL, gauche, droite)
-            else:  # tok_slash
-                self.accept("tok_slash")
-                droite = self.F()
-                gauche = node_2(ND_DIV, gauche, droite)
-        
-        return gauche
-    
-    def F(self):
-        """F -> P"""
-        return self.P()
-
-
 if __name__ == "__main__":
     
     print("\nTest 1: 42")
