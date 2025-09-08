@@ -39,6 +39,12 @@ ND_MUL = "nd_mul"
 ND_DIV = "nd_div"
 ND_IDENT = "nd_ident"
 
+OP = {
+    "tok_plus":  {"prio": 10, "parg": 11, "Ntype": ND_ADD},
+    "tok_minus": {"prio": 10, "parg": 11, "Ntype": ND_SUB},
+    "tok_star":  {"prio": 20, "parg": 21, "Ntype": ND_MUL},
+    "tok_slash": {"prio": 20, "parg": 21, "Ntype": ND_DIV},
+}
 
 def node_v(node_type, valeur):
     """Crée un nœud avec une valeur"""
@@ -78,10 +84,25 @@ class Parser:
         self.lexer.next()
         return self.last
     
-    def E(self):
-        """E -> P"""
-        return self.P()
     
+    def E(self, prio=0):
+        """Analyse récursive avec précédence (precedence climbing)."""
+        N = self.P()   # parse a primary / prefix
+
+        while self.lexer.peek() and self.lexer.peek()[0] in OP:
+            entry = OP[self.lexer.peek()[0]]
+            if entry["prio"] < prio:
+                break
+
+            op_tok = self.lexer.peek()[0]
+            self.accept(op_tok)   # consume operator
+
+            M = self.E(entry["parg"])   # right operand
+            N = node_2(entry["Ntype"], N, M)
+
+        return N
+
+
     def P(self):
 
         if self.check("tok_not"):
@@ -135,6 +156,58 @@ class Parser:
             token = self.lexer.peek()
             raise SyntaxError(f"Expression attendue, reçu: {token[0]} à la ligne {self.lexer.line}")
 
+
+if __name__ == "__main__":
+    
+    print("\nTest 1: 42")
+    lexer1 = Lexer("42")
+    parser1 = Parser(lexer1)
+    arbre1 = parser1.E()
+    arbre1.afficher()
+    print()
+    
+    print("\nTest 2: (123)")
+    lexer2 = Lexer("(123)")
+    parser2 = Parser(lexer2)
+    arbre2 = parser2.E()
+    arbre2.afficher()
+    print()
+    
+    print("\nTest 3: -42")
+    lexer3 = Lexer("-42")
+    parser3 = Parser(lexer3)
+    arbre3 = parser3.E()
+    arbre3.afficher()
+    print()
+    
+    print("\nTest 4: !True")
+    lexer4 = Lexer("!True")
+    parser4 = Parser(lexer4)
+    arbre4 = parser4.E()
+    arbre4.afficher()
+    print()
+    
+    
+    print("\nTest 5: 12 + 34")
+    lexer5 = Lexer("12 + 34")
+    parser5 = Parser(lexer5)
+    arbre5 = parser5.E(0)
+    arbre5.afficher()
+    print()
+    
+    print("\nTest 6: 12 + 3 * 5")
+    lexer6 = Lexer("12 + 3 * 5")
+    parser6 = Parser(lexer6)
+    arbre6 = parser6.E(0)
+    arbre6.afficher()
+    print()
+    
+    print("\nTest 7: -(12 + 3) * 5")
+    lexer7 = Lexer("-(12 + 3) * 5")
+    parser7 = Parser(lexer7)
+    arbre7 = parser7.E(0)
+    arbre7.afficher()
+    print()
 
 
 BINOPS = {
@@ -224,55 +297,4 @@ def gennode(A):
 
     else:
         raise ValueError(f"Unknown node type: {A.type}")
-    
-
-if __name__ == "__main__":
-    
-    print("\nTest 1: 42")
-    lexer1 = Lexer("42")
-    parser1 = Parser(lexer1)
-    arbre1 = parser1.E()
-    arbre1.afficher()
-    print()
-    
-    print("\nTest 2: (123)")
-    lexer2 = Lexer("(123)")
-    parser2 = Parser(lexer2)
-    arbre2 = parser2.E()
-    arbre2.afficher()
-    print()
-    
-    print("\nTest 3: -42")
-    lexer3 = Lexer("-42")
-    parser3 = Parser(lexer3)
-    arbre3 = parser3.E()
-    arbre3.afficher()
-    print()
-    
-    print("\nTest 4: !True")
-    lexer4 = Lexer("!True")
-    parser4 = Parser(lexer4)
-    arbre4 = parser4.E()
-    arbre4.afficher()
-    print()
-    
-    
-    print("\nTest 5: 12 + 34")
-    lexer5 = Lexer("12 + 34")
-    arbre5 = parser5.E()
-    arbre5.afficher()
-    print()
-    
-    print("\nTest 6: 12 + 3 * 5")
-    lexer6 = Lexer("12 + 3 * 5")
-    arbre6 = parser6.E()
-    arbre6.afficher()
-    print()
-    
-    print("\nTest 7: -(12 + 3) * 5")
-    lexer7 = Lexer("-(12 + 3) * 5")
-    arbre7 = parser7.E()
-    arbre7.afficher()
-    print()
-
     
