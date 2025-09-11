@@ -32,7 +32,13 @@ class Nd:
 class SymbolTable:
     def __init__(self, parent=None):
         self.symbols = {}
-        self.next_address = 0 if parent is None else parent.next_address
+        # CORRECTION 1: Chaque scope a son propre compteur d'adresse
+        # qui commence après le parent pour éviter les conflits
+        if parent is None:
+            self.next_address = 0
+        else:
+            # Hériter du compteur du parent
+            self.next_address = parent.next_address
         self.parent = parent
 
     def declare(self, name, value=None):
@@ -41,6 +47,11 @@ class SymbolTable:
         address = self.next_address
         self.symbols[name] = {'address': address, 'value': value}
         self.next_address += 1
+        
+        # CORRECTION 2: Synchroniser le compteur avec le parent
+        if self.parent:
+            self.parent.next_address = self.next_address
+            
         return address
 
     def lookup(self, name):
@@ -59,6 +70,13 @@ class SymbolTable:
         if self.parent:
             return self.parent.exists(name)
         return False
+    
+    def display(self, indent=0):
+        """Affiche la table de symboles avec indentation pour les scopes"""
+        prefix = "  " * indent
+        print(f"{prefix}Scope (next_address={self.next_address}):")
+        for name, info in self.symbols.items():
+            print(f"{prefix}  {name}: adresse={info['address']}, valeur={info['value']}")
 
 
 # Node types for expressions
@@ -73,14 +91,12 @@ ND_IDENT = "nd_ident"
 ND_DECL = "nd_decl"
 ND_ASSIGN = "nd_assign"
 
-
 # Node types for instructions
 ND_DEBUG = "nd_debug"
 ND_BLOCK = "nd_block"
 ND_DROP = "nd_drop"
 
 # Table des opérateurs binaires (précédence/associativité → type de nœud)
-
 BINOPS = {
     "tok_plus":   (10, "L", ND_ADD),
     "tok_minus":  (10, "L", ND_SUB),
@@ -108,9 +124,6 @@ def node_2(node_type, enfant1, enfant2):
 def node(node_type):
     """Crée un nœud simple sans enfant ni valeur"""
     return Nd(node_type)
-
-# Garder tes ND_* comme avant
-
 
 
 class Parser:
@@ -172,7 +185,6 @@ class Parser:
     def A(self):
         """
         A -> nb | (E) | identifiant | True | False
-        (avec auto-déclaration des identifiants pour rester compatible avec tes tests)
         """
         if self.check("tok_chiffre"):
             token = self.accept("tok_chiffre")
@@ -187,10 +199,7 @@ class Parser:
         if self.check("tok_identifiant"):
             token = self.accept("tok_identifiant")
             var_name = token[1]
-            # Auto-déclaration (comportement actuel)
-            if not self.symbol_table.exists(var_name):
-                self.symbol_table.declare(var_name)
-                print(f"Variable '{var_name}' déclarée automatiquement")
+            # Pas d'auto-déclaration ici, sera gérée dans l'analyse sémantique
             return Nd(ND_IDENT, chaine=var_name)
 
         if self.check("tok_motscle"):
@@ -199,9 +208,7 @@ class Parser:
                 self.accept("tok_motscle")
                 valeur = 1 if token[1] == "True" else 0
                 return node_v(ND_CONST, valeur)
-            raise SyntaxError(
-                f"Token inattendu: {token[1]} à la ligne {self.lexer.line}"
-            )
+            # Ne pas lever d'erreur ici, laisser I() gérer les autres mots-clés
 
         token = self.lexer.peek()
         raise SyntaxError(
@@ -209,29 +216,13 @@ class Parser:
         )
 
     def I(self):
-
-    # --- Déclaration ---
+        # --- Déclaration ---
         if self.check("tok_motscle") and self.lexer.peek()[1] == "int":
             self.accept("tok_motscle")
             token = self.accept("tok_identifiant")
             var_name = token[1]
             self.accept("tok_semicolon")
             return Nd(ND_DECL, chaine=var_name)
-
-            # --- Affectation ---
-        if self.check("tok_identifiant"):
-            token = self.accept("tok_identifiant")
-            var_name = token[1]
-            if self.check("tok_egal"):
-                self.accept("tok_egal")
-                expr = self.E()
-                self.accept("tok_semicolon")
-                # Créer un nœud ND_ASSIGN avec 2 enfants : identifiant et expression
-                ident_node = Nd(ND_IDENT, chaine=var_name)
-                n = Nd(ND_ASSIGN)
-                n.ajouter_enfant(ident_node)
-                n.ajouter_enfant(expr)
-                return n
 
         # --- Debug ---
         if self.check("tok_motscle") and self.lexer.peek()[1] == "debug":
@@ -249,13 +240,39 @@ class Parser:
             self.accept("tok_rcurly")
             return N
 
+        # --- Affectation (doit venir avant expression générale) ---
+        if self.check("tok_identifiant"):
+            # Regarder en avant pour voir si c'est une affectation
+            saved_pos = self.lexer.current_pos if hasattr(self.lexer, 'current_pos') else 0
+            
+            token = self.accept("tok_identifiant")
+            var_name = token[1]
+            
+            if self.check("tok_egal"):
+                self.accept("tok_egal")
+                expr = self.E()
+                self.accept("tok_semicolon")
+                # Créer un nœud ND_ASSIGN avec 2 enfants : identifiant et expression
+                ident_node = Nd(ND_IDENT, chaine=var_name)
+                n = Nd(ND_ASSIGN)
+                n.ajouter_enfant(ident_node)
+                n.ajouter_enfant(expr)
+                return n
+            else:
+                # C'est juste une expression, remettre le token dans le lexer
+                # Pour simplifier, on reconstruit l'expression
+                # CORRECTION 3: Gérer correctement le cas où c'est juste un identifiant
+                self.accept("tok_semicolon")
+                return node_1(ND_DROP, Nd(ND_IDENT, chaine=var_name))
+
         # --- Expression suivie de ";" ---
         N = self.E()
         self.accept("tok_semicolon")
         return node_1(ND_DROP, N)
 
+
 def GenNode(node, symbol_table):
-    """Génération d’instructions assembleur avec print direct"""
+    """Génération d'instructions assembleur avec print direct"""
     if node.type == ND_CONST:
         print("push", node.valeur)
 
@@ -288,8 +305,12 @@ def GenNode(node, symbol_table):
         print("div")
 
     elif node.type == ND_IDENT:
-        address = symbol_table.get_address(node.chaine)
-        print("load", address)
+        # CORRECTION 4: L'adresse devrait déjà être stockée après l'analyse sémantique
+        if hasattr(node, 'address'):
+            print("load", node.address)
+        else:
+            address = symbol_table.get_address(node.chaine)
+            print("load", address)
 
     elif node.type == ND_DEBUG:
         GenNode(node.enfant[0], symbol_table)
@@ -310,21 +331,32 @@ def GenNode(node, symbol_table):
     elif node.type == ND_ASSIGN:
         # convention: enfant[0] = identifiant, enfant[1] = expression
         GenNode(node.enfant[1], symbol_table)  # calcule la valeur à stocker
-        address = symbol_table.get_address(node.enfant[0].chaine)
-        print("store", address)
+        
+        # CORRECTION 5: Utiliser l'adresse stockée dans le nœud
+        if hasattr(node.enfant[0], 'address'):
+            print("store", node.enfant[0].address)
+        else:
+            address = symbol_table.get_address(node.enfant[0].chaine)
+            print("store", address)
 
     else:
         raise ValueError(f"Unknown node type: {node.type}")
 
+
 def GenCode(parser, symbol_table, show_ast=False):
-    """Phase globale : construit l’AST, analyse sémantique, génère le code"""
+    """Phase globale : construit l'AST, analyse sémantique, génère le code"""
     ast = ana_sem(parser)                  
     if show_ast:
+        print("AST: ", end="")
         ast.afficher()
-    print("\n")
+        print()
+    print("Instructions:")
     GenNode(ast, symbol_table)      
 
+
 def sem_node(node, symbol_table):
+    """CORRECTION 6: Analyse sémantique complètement réécrite"""
+    
     if node.type == ND_CONST:
         return
 
@@ -335,17 +367,35 @@ def sem_node(node, symbol_table):
     elif node.type in [ND_NOT, ND_NEG, ND_DROP, ND_DEBUG]:
         sem_node(node.enfant[0], symbol_table)
 
-    elif node.type == ND_BLOCK:
-        local_table = SymbolTable(parent=symbol_table)
-        for child in node.enfant:
-            sem_node(child, local_table)
-
-
     elif node.type == ND_IDENT:
         var_name = node.chaine
         if not symbol_table.exists(var_name):
             raise NameError(f"Variable '{var_name}' utilisée sans déclaration")
-        node.valeur = symbol_table.get_address(var_name)
+        # Stocker l'adresse dans le nœud pour la génération de code
+        node.address = symbol_table.get_address(var_name)
+
+    elif node.type == ND_DECL:
+        var_name = node.chaine
+        try:
+            address = symbol_table.declare(var_name)
+            print(f"Variable '{var_name}' déclarée à l'adresse {address}")
+        except NameError as e:
+            print(f"Erreur: {e}")
+            raise
+
+    elif node.type == ND_ASSIGN:
+        ident_node = node.enfant[0]
+        expr_node = node.enfant[1]
+        
+        # Analyser l'expression d'abord
+        sem_node(expr_node, symbol_table)
+        
+        # Vérifier que la variable existe
+        if not symbol_table.exists(ident_node.chaine):
+            raise NameError(f"Variable '{ident_node.chaine}' utilisée sans déclaration")
+        
+        # Stocker l'adresse dans le nœud identifiant
+        ident_node.address = symbol_table.get_address(ident_node.chaine)
 
     elif node.type == ND_BLOCK:
         # Créer une nouvelle table qui pointe vers la table parente
@@ -353,18 +403,11 @@ def sem_node(node, symbol_table):
         for child in node.enfant:
             sem_node(child, local_table)
 
-
-    elif node.type == ND_ASSIGN:
-        ident_node = node.enfant[0]
-        expr_node = node.enfant[1]
-        if not symbol_table.exists(ident_node.chaine):
-            raise NameError(f"Variable '{ident_node.chaine}' utilisée sans déclaration")
-        sem_node(expr_node, symbol_table)
-        ident_node.valeur = symbol_table.get_address(ident_node.chaine)
-
     else:
+        # Pour les autres types de nœuds, analyser récursivement les enfants
         for child in node.enfant:
             sem_node(child, symbol_table)
+
 
 def ana_sem(parser):
     """
@@ -377,31 +420,31 @@ def ana_sem(parser):
     sem_node(ast, parser.symbol_table)  
     return ast
 
+
 if __name__ == "__main__":
     symbol_table = SymbolTable()
 
     print("\n--- Test 1: constante ---")
     lexer1 = Lexer("42;")
     parser1 = Parser(lexer1, symbol_table)
-    GenCode(parser1, symbol_table,show_ast=True)   
+    GenCode(parser1, symbol_table, show_ast=True)   
 
     print("\n--- Test 2: addition ---")
     lexer2 = Lexer("3 + 5;")
     parser2 = Parser(lexer2, symbol_table)
-    GenCode(parser2, symbol_table,show_ast=True)   
+    GenCode(parser2, symbol_table, show_ast=True)   
 
     print("\n--- Test 3: debug ---")
     lexer3 = Lexer("debug 7;")
     parser3 = Parser(lexer3, symbol_table)
-    GenCode(parser3, symbol_table,show_ast=True)   
+    GenCode(parser3, symbol_table, show_ast=True)   
 
     print("\n--- Test 4: bloc ---")
     lexer4 = Lexer("{ 1 + 2; debug 3; }")
     parser4 = Parser(lexer4, symbol_table)
-    GenCode(parser4, symbol_table ,show_ast=True)
+    GenCode(parser4, symbol_table, show_ast=True)
 
     print("\n--- Test 5: test prof ---")
     lexer5 = Lexer("{ int x ; x=3; { x=2; int x ; x=5; } x=7;}")
-    parser5 = Parser(lexer5, symbol_table)
-    GenCode(parser5, symbol_table,show_ast=True)
-  
+    parser5 = Parser(lexer5, SymbolTable())  # Nouvelle table pour ce test
+    GenCode(parser5, parser5.symbol_table, show_ast=True)
