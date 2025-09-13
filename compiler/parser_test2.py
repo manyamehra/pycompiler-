@@ -28,56 +28,37 @@ class Nd:
         
         print(")", end="")
 
-
 class SymbolTable:
-    def __init__(self, parent=None):
-        self.symbols = {}
-        # CORRECTION 1: Chaque scope a son propre compteur d'adresse
-        # qui commence après le parent pour éviter les conflits
-        if parent is None:
-            self.next_address = 0
-        else:
-            # Hériter du compteur du parent
-            self.next_address = parent.next_address
-        self.parent = parent
+    def __init__(self):
+        self.scopes = [{}]  # pile : [scope global]
+        self.next_address = 0
+
+    def enter_scope(self):
+        self.scopes.append({})
+
+    def leave_scope(self):
+        scope = self.scopes.pop()
+        # drop les variables de ce scope
+        for _ in range(len(scope)):
+            print("drop")
 
     def declare(self, name, value=None):
-        if name in self.symbols:  # vérifie uniquement dans CE scope
+        current = self.scopes[-1]
+        if name in current:
             raise NameError(f"Variable '{name}' déjà déclarée dans ce scope")
         address = self.next_address
-        self.symbols[name] = {'address': address, 'value': value}
+        current[name] = {'address': address, 'value': value}
         self.next_address += 1
-        
-        # CORRECTION 2: Synchroniser le compteur avec le parent
-        if self.parent:
-            self.parent.next_address = self.next_address
-            
         return address
 
     def lookup(self, name):
-        if name in self.symbols:
-            return self.symbols[name]
-        if self.parent:
-            return self.parent.lookup(name)
+        for scope in reversed(self.scopes):
+            if name in scope:
+                return scope[name]
         raise NameError(f"Variable '{name}' non déclarée")
 
     def get_address(self, name):
         return self.lookup(name)['address']
-
-    def exists(self, name):
-        if name in self.symbols:
-            return True
-        if self.parent:
-            return self.parent.exists(name)
-        return False
-    
-    def display(self, indent=0):
-        """Affiche la table de symboles avec indentation pour les scopes"""
-        prefix = "  " * indent
-        print(f"{prefix}Scope (next_address={self.next_address}):")
-        for name, info in self.symbols.items():
-            print(f"{prefix}  {name}: adresse={info['address']}, valeur={info['value']}")
-
 
 # Node types for expressions
 ND_CONST = "nd_const"
@@ -317,8 +298,19 @@ def GenNode(node, symbol_table):
         print("debug")
 
     elif node.type == ND_BLOCK:
-        for enfant in node.enfant:
-            GenNode(enfant, symbol_table)
+        # entrer dans un nouveau scope
+        symbol_table.enter_scope()
+        # compter les variables locales déclarées dans ce bloc
+        nb_locals = sum(1 for child in node.enfant if child.type == ND_DECL)
+        if nb_locals > 0:
+            print("resn", nb_locals)
+
+        for child in node.enfant:
+            GenNode(child, symbol_table)
+
+        # sortir du scope
+        symbol_table.leave_scope()
+
 
     elif node.type == ND_DROP:
         GenNode(node.enfant[0], symbol_table)
@@ -329,15 +321,11 @@ def GenNode(node, symbol_table):
         pass  
 
     elif node.type == ND_ASSIGN:
-        # convention: enfant[0] = identifiant, enfant[1] = expression
-        GenNode(node.enfant[1], symbol_table)  # calcule la valeur à stocker
-        
-        # CORRECTION 5: Utiliser l'adresse stockée dans le nœud
-        if hasattr(node.enfant[0], 'address'):
-            print("store", node.enfant[0].address)
-        else:
-            address = symbol_table.get_address(node.enfant[0].chaine)
-            print("store", address)
+        GenNode(node.enfant[1], symbol_table)  # push valeur
+        print("dup")
+        print("ret", node.enfant[0].address)
+        print("drop 1")
+
 
     else:
         raise ValueError(f"Unknown node type: {node.type}")
@@ -353,10 +341,7 @@ def GenCode(parser, symbol_table, show_ast=False):
     print("Instructions:")
     GenNode(ast, symbol_table)      
 
-
 def sem_node(node, symbol_table):
-    """CORRECTION 6: Analyse sémantique complètement réécrite"""
-    
     if node.type == ND_CONST:
         return
 
@@ -369,45 +354,44 @@ def sem_node(node, symbol_table):
 
     elif node.type == ND_IDENT:
         var_name = node.chaine
-        if not symbol_table.exists(var_name):
-            raise NameError(f"Variable '{var_name}' utilisée sans déclaration")
-        # Stocker l'adresse dans le nœud pour la génération de code
-        node.address = symbol_table.get_address(var_name)
+        # Vérifie que la variable existe dans un scope
+        for scope in reversed(symbol_table.scopes):
+            if var_name in scope:
+                node.address = scope[var_name]['address']
+                return
+        raise NameError(f"Variable '{var_name}' utilisée sans déclaration")
 
     elif node.type == ND_DECL:
         var_name = node.chaine
-        try:
-            address = symbol_table.declare(var_name)
-            print(f"Variable '{var_name}' déclarée à l'adresse {address}")
-        except NameError as e:
-            print(f"Erreur: {e}")
-            raise
+        address = symbol_table.declare(var_name)
+        node.address = address   # on garde aussi l’adresse dans le nœud
+        print(f"Variable '{var_name}' déclarée à l'adresse {address}")
 
     elif node.type == ND_ASSIGN:
         ident_node = node.enfant[0]
         expr_node = node.enfant[1]
-        
-        # Analyser l'expression d'abord
+
+        # Analyse de l’expression
         sem_node(expr_node, symbol_table)
-        
-        # Vérifier que la variable existe
-        if not symbol_table.exists(ident_node.chaine):
+
+        # Vérifie que la variable existe
+        for scope in reversed(symbol_table.scopes):
+            if ident_node.chaine in scope:
+                ident_node.address = scope[ident_node.chaine]['address']
+                break
+        else:
             raise NameError(f"Variable '{ident_node.chaine}' utilisée sans déclaration")
-        
-        # Stocker l'adresse dans le nœud identifiant
-        ident_node.address = symbol_table.get_address(ident_node.chaine)
 
     elif node.type == ND_BLOCK:
-        # Créer une nouvelle table qui pointe vers la table parente
-        local_table = SymbolTable(parent=symbol_table)
-        for child in node.enfant:
-            sem_node(child, local_table)
-
-    else:
-        # Pour les autres types de nœuds, analyser récursivement les enfants
+        # Entrer dans un scope
+        symbol_table.enter_scope()
         for child in node.enfant:
             sem_node(child, symbol_table)
+        symbol_table.leave_scope()
 
+    else:
+        for child in node.enfant:
+            sem_node(child, symbol_table)
 
 def ana_sem(parser):
     """
