@@ -451,8 +451,3 @@ if __name__ == "__main__":
     lexer5 = Lexer("{ int x ; x=3; { x=2; int x ; x=5; } x=7;}")
     parser5 = Parser(lexer5, SymbolTable()) 
     GenCode(parser5, parser5.symbol_table, show_ast=True)
-
-    print("\n--- Test 5: test confition if  ---")
-    lexer6 = Lexer("{ int x; if (1) { x=3; } else { x=5; } }")
-    parser6 = Parser(lexer6, SymbolTable())  
-    GenCode(parser6, parser6.symbol_table, show_ast=True)
