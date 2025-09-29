@@ -1,4 +1,4 @@
-from lexer import Lexer
+from analyse_lexique import Lexer
 
 
 class Nd:
@@ -40,6 +40,7 @@ ND_IDENT = "nd_ident"
 ND_DECL = "nd_decl"
 ND_ASSIGN = "nd_assign"
 ND_IF = "nd_if"
+ND_WHILE = "nd_while"
 ND_DEBUG = "nd_debug"
 ND_BLOCK = "nd_block"
 ND_DROP = "nd_drop"
@@ -80,7 +81,7 @@ class Parser:
         self.lexer.next()
         return self.last
 
-    def parse_expression(self, min_prio=0): 
+    def parse_expression(self, min_prio=0):
         """Parse expressions with precedence climbing"""
         left = self.parse_primary()
 
@@ -183,6 +184,15 @@ class Parser:
                 children.append(else_stmt)
             
             return create_node(ND_IF, children=children)
+
+        # While statement
+        if self.check("tok_motscle") and self.lexer.peek()[1] == "while":
+            self.accept("tok_motscle")
+            self.accept("tok_lparen")
+            condition = self.parse_expression()
+            self.accept("tok_rparen")
+            body = self.parse_instruction()
+            return create_node(ND_WHILE, children=[condition, body])
 
         # Assignment or expression statement
         if self.check("tok_identifiant"):
