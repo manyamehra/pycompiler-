@@ -197,8 +197,6 @@ class Parser:
             
             return create_node(ND_IF, children=children)
 
-<<<<<<< HEAD
-=======
         # While statement
         if self.check("tok_motscle") and self.lexer.peek()[1] == "while":
             self.accept("tok_motscle")
@@ -209,7 +207,6 @@ class Parser:
             return create_node(ND_WHILE, children=[condition, body])
 
         # Assignment or expression statement
->>>>>>> 03ae1a57f475d9056b684c623a4e0bc592e6e264
         if self.check("tok_identifiant"):
             var_token = self.accept("tok_identifiant")
             
