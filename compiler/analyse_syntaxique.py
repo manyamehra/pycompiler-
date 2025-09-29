@@ -80,7 +80,7 @@ class Parser:
         self.lexer.next()
         return self.last
 
-    def parse_expression(self, min_prio=0):
+    def parse_expression(self, min_prio=0): 
         """Parse expressions with precedence climbing"""
         left = self.parse_primary()
 

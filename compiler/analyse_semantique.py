@@ -187,53 +187,45 @@ class CodeGenerator:
         print("drop", "1")
 
     def gen_nd_block(self, node):
-        # Only emit resn for the root block with total count
         if hasattr(node, 'is_root') and node.is_root and node.total_declarations > 0:
             print("resn", node.total_declarations)
 
-        # Generate code for all children
         for child in node.enfant:
             self.generate(child)
 
-        # Only emit drop for the root block with total count
         if hasattr(node, 'is_root') and node.is_root:
-            # Calculate total variables to drop (sum of all scopes)
             total_to_drop = self.symbol_table.next_address
             if total_to_drop > 0:
                 print("drop", total_to_drop)
 
     def gen_nd_if(self, node):
-        self.generate(node.enfant[0])  # Condition
+        self.generate(node.enfant[0])  
         
         L1 = new_label()
         L2 = new_label()
         
         print("jumpf", L1)
-        self.generate(node.enfant[1])  # Then branch
+        self.generate(node.enfant[1])  
         print("jump", L2)
         print(L1 + ":")
-        if len(node.enfant) > 2:  # Else branch exists
+        if len(node.enfant) > 2:  
             self.generate(node.enfant[2])
         print(L2 + ":")
 
 
 def compile_code(source_code, show_ast=False):
     """Complete compilation pipeline"""
-    # Parse
     ast = parse(source_code)
     
-    # Semantic analysis
     symbol_table = SymbolTable()
     analyzer = SemanticAnalyzer(symbol_table)
     analyzer.analyze(ast)
     
-    # Show AST if requested
     if show_ast:
         print("AST: ", end="")
         ast.afficher()
         print()
     
-    # Code generation
     print("Instructions:")
     generator = CodeGenerator(symbol_table)
     generator.generate(ast)
@@ -254,3 +246,7 @@ if __name__ == "__main__":
 
     print("\n--- Test 5: test prof ---")
     compile_code("{ int x ; x=3; { x=2; int x ; x=5; } x=7;}", show_ast=True)
+
+    print("\n--- Test 6: test confition if  ---")
+    compile_code("{ int x; if (1) { x=3; } else { x=5; } }")
+    
