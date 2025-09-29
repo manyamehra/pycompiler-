@@ -1,4 +1,4 @@
-from lexer import Lexer
+from compiler.analyse_lexique import Lexer
 
 
 class Nd:

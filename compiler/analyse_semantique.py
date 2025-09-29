@@ -1,7 +1,7 @@
 from analyse_syntaxique import (
     Nd, parse,
     ND_CONST, ND_NOT, ND_NEG, ND_ADD, ND_SUB, ND_MUL, ND_DIV,
-    ND_IDENT, ND_DECL, ND_ASSIGN, ND_IF, ND_DEBUG, ND_BLOCK, ND_DROP
+    ND_IDENT, ND_DECL, ND_ASSIGN, ND_IF, ND_WHILE, ND_DEBUG, ND_BLOCK, ND_DROP
 )
 
 
@@ -180,45 +180,64 @@ class CodeGenerator:
         print("drop", "1")
 
     def gen_nd_block(self, node):
+        # Only emit resn for the root block with total count
         if hasattr(node, 'is_root') and node.is_root and node.total_declarations > 0:
             print("resn", node.total_declarations)
 
+        # Generate code for all children
         for child in node.enfant:
             self.generate(child)
 
+        # Only emit drop for the root block with total count
         if hasattr(node, 'is_root') and node.is_root:
+            # Calculate total variables to drop (sum of all scopes)
             total_to_drop = self.symbol_table.next_address
             if total_to_drop > 0:
                 print("drop", total_to_drop)
 
     def gen_nd_if(self, node):
-        self.generate(node.enfant[0])  
+        self.generate(node.enfant[0])  # Condition
         
         L1 = new_label()
         L2 = new_label()
         
         print("jumpf", L1)
-        self.generate(node.enfant[1])  
+        self.generate(node.enfant[1])  # Then branch
         print("jump", L2)
         print(L1 + ":")
-        if len(node.enfant) > 2:  
+        if len(node.enfant) > 2:  # Else branch exists
             self.generate(node.enfant[2])
         print(L2 + ":")
+
+    def gen_nd_while(self, node):
+        L_start = new_label()
+        L_end = new_label()
+        
+        print(L_start + ":")
+        self.generate(node.enfant[0])  # Condition
+        print("jumpf", L_end)
+        self.generate(node.enfant[1])  # Body
+        print("jump", L_start)
+        print(L_end + ":")
 
 
 def compile_code(source_code, show_ast=False):
     """Complete compilation pipeline"""
+    # Parse
     ast = parse(source_code)
     
+    # Semantic analysis
     symbol_table = SymbolTable()
     analyzer = SemanticAnalyzer(symbol_table)
     analyzer.analyze(ast)
     
+    # Show AST if requested
     if show_ast:
         print("AST: ", end="")
         ast.afficher()
         print()
     
+    # Code generation
     print("Instructions:")
     generator = CodeGenerator(symbol_table)
     generator.generate(ast)
@@ -242,4 +261,20 @@ if __name__ == "__main__":
 
     print("\n--- Test 6: test confition if  ---")
     compile_code("{ int x; if (1) { x=3; } else { x=5; } }")
-    
+
+    print("\n--- Test 6: simple while ---")
+    compile_code("""
+    {
+        int i;
+        i = 3;
+        while (i) {
+            debug i;
+            i = i - 1;
+        }
+    }
+    """, show_ast=True)
+
+    while (x < 5) {
+    debug x;
+    x = x + 1;
+}
