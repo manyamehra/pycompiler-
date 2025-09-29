@@ -1,6 +1,7 @@
 from analyse_syntaxique import (
     Nd, parse,
     ND_CONST, ND_NOT, ND_NEG, ND_ADD, ND_SUB, ND_MUL, ND_DIV,
+    ND_LT, ND_GT, ND_LE, ND_GE, ND_EQ, ND_NE,
     ND_IDENT, ND_DECL, ND_ASSIGN, ND_IF, ND_WHILE, ND_DEBUG, ND_BLOCK, ND_DROP
 )
 
@@ -158,6 +159,36 @@ class CodeGenerator:
         self.generate(node.enfant[1])
         print("div")
 
+    def gen_nd_lt(self, node):
+        self.generate(node.enfant[0])
+        self.generate(node.enfant[1])
+        print("lt")
+
+    def gen_nd_gt(self, node):
+        self.generate(node.enfant[0])
+        self.generate(node.enfant[1])
+        print("gt")
+
+    def gen_nd_le(self, node):
+        self.generate(node.enfant[0])
+        self.generate(node.enfant[1])
+        print("le")
+
+    def gen_nd_ge(self, node):
+        self.generate(node.enfant[0])
+        self.generate(node.enfant[1])
+        print("ge")
+
+    def gen_nd_eq(self, node):
+        self.generate(node.enfant[0])
+        self.generate(node.enfant[1])
+        print("eq")
+
+    def gen_nd_ne(self, node):
+        self.generate(node.enfant[0])
+        self.generate(node.enfant[1])
+        print("ne")
+
     def gen_nd_ident(self, node):
         print("load", node.address)
 
@@ -259,22 +290,5 @@ if __name__ == "__main__":
     print("\n--- Test 5: test prof ---")
     compile_code("{ int x ; x=3; { x=2; int x ; x=5; } x=7;}", show_ast=True)
 
-    print("\n--- Test 6: test confition if  ---")
-    compile_code("{ int x; if (1) { x=3; } else { x=5; } }")
-
-    print("\n--- Test 6: simple while ---")
-    compile_code("""
-    {
-        int i;
-        i = 3;
-        while (i) {
-            debug i;
-            i = i - 1;
-        }
-    }
-    """, show_ast=True)
-
-    while (x < 5) {
-    debug x;
-    x = x + 1;
-}
+    print("\n--- Test 8: simple while ---")
+    compile_code("{ int x; x=0; while (x<5) { debug x; x = x + 1; } }",show_ast=True)

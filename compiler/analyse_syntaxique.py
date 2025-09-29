@@ -36,6 +36,12 @@ ND_ADD = "nd_add"
 ND_SUB = "nd_sub"
 ND_MUL = "nd_mul"
 ND_DIV = "nd_div"
+ND_LT = "nd_lt"
+ND_GT = "nd_gt"
+ND_LE = "nd_le"
+ND_GE = "nd_ge"
+ND_EQ = "nd_eq"
+ND_NE = "nd_ne"
 ND_IDENT = "nd_ident"
 ND_DECL = "nd_decl"
 ND_ASSIGN = "nd_assign"
@@ -51,6 +57,12 @@ BINOPS = {
     "tok_minus":  (10, "L", ND_SUB),
     "tok_star":   (20, "L", ND_MUL),
     "tok_slash":  (20, "L", ND_DIV),
+    "tok_lt":     (5, "L", ND_LT),
+    "tok_gt":     (5, "L", ND_GT),
+    "tok_le":     (5, "L", ND_LE),
+    "tok_ge":     (5, "L", ND_GE),
+    "tok_eq":     (5, "L", ND_EQ),
+    "tok_ne":     (5, "L", ND_NE),
 }
 
 
