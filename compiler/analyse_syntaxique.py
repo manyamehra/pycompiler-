@@ -184,25 +184,20 @@ class Parser:
             
             return create_node(ND_IF, children=children)
 
-        # Assignment or expression statement
         if self.check("tok_identifiant"):
-            # Look ahead to see if it's assignment
             var_token = self.accept("tok_identifiant")
             
             if self.check("tok_egal"):
-                # Assignment
                 self.accept("tok_egal")
                 expr = self.parse_expression()
                 self.accept("tok_semicolon")
                 ident_node = create_node(ND_IDENT, chaine=var_token[1])
                 return create_node(ND_ASSIGN, children=[ident_node, expr])
             else:
-                # Just identifier as expression
                 self.accept("tok_semicolon")
                 ident_node = create_node(ND_IDENT, chaine=var_token[1])
                 return create_node(ND_DROP, children=[ident_node])
 
-        # Expression statement
         expr = self.parse_expression()
         self.accept("tok_semicolon")
         return create_node(ND_DROP, children=[expr])
@@ -217,7 +212,6 @@ def parse(source_code):
 
 
 if __name__ == "__main__":
-    # Simple test
     print("--- Test parsing ---")
     ast = parse("42;")
     print("AST: ", end="")

@@ -7,7 +7,7 @@ from analyse_syntaxique import (
 
 class SymbolTable:
     def __init__(self):
-        self.scopes = [{}]  # Stack of scopes
+        self.scopes = [{}]  
         self.next_address = 0
 
     def enter_scope(self):
@@ -79,34 +79,27 @@ class SemanticAnalyzer:
 
     def analyze_nd_assign(self, node):
         """Analyze assignment"""
-        # Analyze the expression first
         self.analyze(node.enfant[1])
-        # Then look up the identifier
         ident_node = node.enfant[0]
         ident_node.address = self.symbol_table.lookup(ident_node.chaine)
 
     def analyze_nd_block(self, node):
         """Analyze block with new scope"""
-        is_root_block = len(self.symbol_table.scopes) == 1  # Check if this is the outermost block
+        is_root_block = len(self.symbol_table.scopes) == 1  
         
         self.symbol_table.enter_scope()
         
         if is_root_block:
-            # For the root block, count ALL declarations recursively
             node.total_declarations = self._count_all_declarations(node)
             node.is_root = True
         else:
-            # For nested blocks, don't emit resn
             node.is_root = False
         
-        # Count direct declarations for this scope
         node.direct_decl_count = sum(1 for child in node.enfant if child.type == ND_DECL)
         
-        # Analyze all children
         for child in node.enfant:
             self.analyze(child)
         
-        # Store number of variables to drop when leaving scope
         node.drop_count = self.symbol_table.leave_scope()
     
     def _count_all_declarations(self, node):
@@ -181,7 +174,7 @@ class CodeGenerator:
         pass
 
     def gen_nd_assign(self, node):
-        self.generate(node.enfant[1])  # Generate expression
+        self.generate(node.enfant[1])  
         print("dup")
         print("set", node.enfant[0].address)
         print("drop", "1")
