@@ -162,7 +162,7 @@ class CodeGenerator:
     def gen_nd_lt(self, node):
         self.generate(node.enfant[0])
         self.generate(node.enfant[1])
-        print("lt")
+        print("cmplt")
 
     def gen_nd_gt(self, node):
         self.generate(node.enfant[0])
@@ -190,11 +190,11 @@ class CodeGenerator:
         print("ne")
 
     def gen_nd_ident(self, node):
-        print("load", node.address)
+        print("get", node.address)
 
     def gen_nd_debug(self, node):
         self.generate(node.enfant[0])
-        print("debug")
+        print("send")
 
     def gen_nd_drop(self, node):
         self.generate(node.enfant[0])
@@ -227,29 +227,27 @@ class CodeGenerator:
                 print("drop", total_to_drop)
 
     def gen_nd_if(self, node):
-        self.generate(node.enfant[0])  # Condition
-        
-        L1 = new_label()
-        L2 = new_label()
-        
-        print("jumpf", L1)
-        self.generate(node.enfant[1])  # Then branch
-        print("jump", L2)
-        print(L1 + ":")
-        if len(node.enfant) > 2:  # Else branch exists
+        self.generate(node.enfant[0])  # condition
+        L_else = new_label()
+        L_end = new_label()
+        print("jumpf", L_else)
+        self.generate(node.enfant[1])  # bloc if
+        print("jump", L_end)
+        print(f".{L_else}")
+        if len(node.enfant) > 2:       # bloc else
             self.generate(node.enfant[2])
-        print(L2 + ":")
+        print(f".{L_end}")
 
     def gen_nd_while(self, node):
         L_start = new_label()
         L_end = new_label()
         
-        print(L_start + ":")
+        print("."+L_start)
         self.generate(node.enfant[0])  # Condition
         print("jumpf", L_end)
         self.generate(node.enfant[1])  # Body
         print("jump", L_start)
-        print(L_end + ":")
+        print("."+L_end)
 
 
 def compile_code(source_code, show_ast=False):
