@@ -61,8 +61,8 @@ BINOPS = {
     "tok_gt":     (5, "L", ND_GT),
     "tok_le":     (5, "L", ND_LE),
     "tok_ge":     (5, "L", ND_GE),
-    "tok_eq":     (5, "L", ND_EQ),
-    "tok_ne":     (5, "L", ND_NE),
+    "tok_equalto":     (5, "L", ND_EQ),
+    "tok_notequal":     (5, "L", ND_NE),
 }
 
 

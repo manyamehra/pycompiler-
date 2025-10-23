@@ -167,27 +167,27 @@ class CodeGenerator:
     def gen_nd_gt(self, node):
         self.generate(node.enfant[0])
         self.generate(node.enfant[1])
-        print("gt")
+        print("cmpgt")
 
     def gen_nd_le(self, node):
         self.generate(node.enfant[0])
         self.generate(node.enfant[1])
-        print("le")
+        print("cmple")
 
     def gen_nd_ge(self, node):
         self.generate(node.enfant[0])
         self.generate(node.enfant[1])
-        print("ge")
+        print("cmpge")
 
     def gen_nd_eq(self, node):
         self.generate(node.enfant[0])
         self.generate(node.enfant[1])
-        print("eq")
+        print("cmpeq")
 
     def gen_nd_ne(self, node):
         self.generate(node.enfant[0])
         self.generate(node.enfant[1])
-        print("ne")
+        print("cmpne")
 
     def gen_nd_ident(self, node):
         print("get", node.address)
