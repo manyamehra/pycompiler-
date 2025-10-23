@@ -50,6 +50,7 @@ ND_WHILE = "nd_while"
 ND_DEBUG = "nd_debug"
 ND_BLOCK = "nd_block"
 ND_DROP = "nd_drop"
+ND_FOR="nd_for"
 
 # Binary operators table
 BINOPS = {
@@ -63,6 +64,7 @@ BINOPS = {
     "tok_ge":     (5, "L", ND_GE),
     "tok_equalto":     (5, "L", ND_EQ),
     "tok_notequal":     (5, "L", ND_NE),
+      "tok_egal":    (1, "R", ND_ASSIGN), 
 }
 
 
@@ -196,6 +198,18 @@ class Parser:
                 children.append(else_stmt)
             
             return create_node(ND_IF, children=children)
+        # for statement 
+        if self.check("tok_motscle") and self.lexer.peek()[1]=="for":
+            self.accept("tok_motscle")
+            self.accept("tok_lparen")
+            E1 = self.parse_expression()
+            self.accept("tok_semicolon")
+            E2 = self.parse_expression()
+            self.accept("tok_semicolon")
+            E3 = self.parse_expression()
+            self.accept("tok_rparen")
+            I1 = self.parse_instruction()
+            return create_node(ND_FOR, children=[E1, E2, E3, I1])
 
         # While statement
         if self.check("tok_motscle") and self.lexer.peek()[1] == "while":

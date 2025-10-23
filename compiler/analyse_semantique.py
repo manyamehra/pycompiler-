@@ -2,7 +2,7 @@ from analyse_syntaxique import (
     Nd, parse,
     ND_CONST, ND_NOT, ND_NEG, ND_ADD, ND_SUB, ND_MUL, ND_DIV,
     ND_LT, ND_GT, ND_LE, ND_GE, ND_EQ, ND_NE,
-    ND_IDENT, ND_DECL, ND_ASSIGN, ND_IF, ND_WHILE, ND_DEBUG, ND_BLOCK, ND_DROP
+    ND_IDENT, ND_DECL, ND_ASSIGN, ND_IF, ND_WHILE, ND_DEBUG, ND_BLOCK, ND_DROP,ND_FOR,
 )
 
 
@@ -241,13 +241,34 @@ class CodeGenerator:
     def gen_nd_while(self, node):
         L_start = new_label()
         L_end = new_label()
-        
         print("."+L_start)
+
         self.generate(node.enfant[0])  # Condition
+
         print("jumpf", L_end)
+
         self.generate(node.enfant[1])  # Body
+
         print("jump", L_start)
+
         print("."+L_end)
+
+    def gen_nd_for(self, node):
+        L_start= new_label()
+        L_end= new_label()
+        self.generate(node.enfant[0]) # intialisation 
+        print(".",L_start)
+
+        self.generate(node.enfant[1]) #condition
+        print("jumpf",L_end)
+
+        self.generate(node.enfant[3]) #corps
+
+        self.generate(node.enfant[2]) # incremen
+
+        print("jump",L_start)
+
+        print(".",L_end)
 
 
 def compile_code(source_code, show_ast=False):
@@ -290,3 +311,6 @@ if __name__ == "__main__":
 
     print("\n--- Test 8: simple while ---")
     compile_code("{ int x; x=0; while (x<5) { debug x; x = x + 1; } }",show_ast=True)
+   
+    print("\n--- Test 9: simple for ---")
+    compile_code("{ int i; for (i = 0; i < 5; i = i + 1) { debug i; } }", show_ast=True)

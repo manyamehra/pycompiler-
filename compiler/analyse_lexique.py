@@ -3,7 +3,7 @@ import re
 # --- Mots-clés ---
 
 KEYWORDS = {
-   "int","debug","elif","int" ,"if", "else", "while", "def", "return", "True", "False", "None","int", "AND","default","OR","breaks","continue","void","do"
+   "int","debug","elif","int" ,"if", "else", "while", "def", "return", "True", "False", "None","int", "AND","default","OR","breaks","continue","void","do","for"
 }
 # --- Spécification (les opérateurs à 2 chars AVANT ceux à 1 char) ---
 TOKEN_SPEC = [
