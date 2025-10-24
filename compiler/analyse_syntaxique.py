@@ -8,6 +8,7 @@ class Nd:
         self.chaine = chaine
         self.enfant = []
         self.address = None  # For semantic analysis
+        self.array_size= None 
     
     def ajouter_enfant(self, enfant_node):
         """Ajoute un enfant au nœud"""
@@ -51,6 +52,10 @@ ND_DEBUG = "nd_debug"
 ND_BLOCK = "nd_block"
 ND_DROP = "nd_drop"
 ND_FOR="nd_for"
+ND_DOWHILE="nd_dowhile"
+ND_ARRAY_DECL="nd_array_decl"
+ND_ARRAY_ACCESS="nd_array_access"
+ND_ARRAY_ASSIGN="nd_array_assign"
 
 # Binary operators table
 BINOPS = {
@@ -146,6 +151,15 @@ class Parser:
 
         if self.check("tok_identifiant"):
             token = self.accept("tok_identifiant")
+
+            #Check for array access
+            if self.check("tok_lbrack"):
+                self.accept("tok_lbrack")
+                index_expr=self.parse_expression()
+                self.accept("tok_rbrack")
+
+                ident_node=create_node(ND_IDENT, chaine=token[1])
+                return create_node(ND_ARRAY_ACCESS, children=[ident_node, index_expr])
             return create_node(ND_IDENT, chaine=token[1])
 
         if self.check("tok_motscle"):
@@ -219,10 +233,39 @@ class Parser:
             self.accept("tok_rparen")
             body = self.parse_instruction()
             return create_node(ND_WHILE, children=[condition, body])
+        
+        # Do While statement
+        if self.check("tok_motscle") and self.lexer.peek()[1] == "do":
+            self.accept("tok_motscle") #consume 'do'
+            body=self.parse_instruction()
+
+            #On attend à voir 'while'
+            if not (self.check("tok_motscle") and self.lexer.peek()[1]=="while"):
+                raise SyntaxError(f"Expected 'while' after do-body at line {self.lexer.line}")
+            self.accept("tok_motscle") #consume 'while'
+
+            self.accept("tok_lparen")
+            condition=self.parse_expression()
+            self.accept("tok_rparen")
+            self.accept("tok_semicolon")
+
+            return create_node(ND_DOWHILE, children=[body, condition])
 
         # Assignment or expression statement
         if self.check("tok_identifiant"):
             var_token = self.accept("tok_identifiant")
+
+            #Check for array assignment: arr[index]=value;
+            if self.check("tok_lbrack"):
+                self.accept("tok_lbrack")
+                index_expr=self.parse_expression()
+                self.accept("tok_rbrack")
+                self.accept("tok_egal")
+                value_expr=self.parse_expression()
+                self.accept("tok_semicolon")
+
+                indent_node=create_node(ND_IDENT, chaine=var_token[1])
+                return create_node(ND_ASSIGN, children=[indent_node,expr])
             
             if self.check("tok_egal"):
                 self.accept("tok_egal")
@@ -230,15 +273,34 @@ class Parser:
                 self.accept("tok_semicolon")
                 ident_node = create_node(ND_IDENT, chaine=var_token[1])
                 return create_node(ND_ASSIGN, children=[ident_node, expr])
+            
             else:
                 self.accept("tok_semicolon")
-                ident_node = create_node(ND_IDENT, chaine=var_token[1])
+                ident_node=create_node(ND_IDENT, chaine=var_token[1])
                 return create_node(ND_DROP, children=[ident_node])
 
         expr = self.parse_expression()
         self.accept("tok_semicolon")
         return create_node(ND_DROP, children=[expr])
+        
+        #Array decalaration
+        if self.check("tok_motscle") and self.lexer.peek()[1]=="int":
+            self.accept("tok_motscle")
+            token=self.accept("tok_identifiant")
 
+            #Check si c'est la déclaration d'un array
+            if self.check("tok_lbrack"):
+                self.accept("tok_lbrack")
+                size_token=self.accept("tok_chiffre")
+                self.accept("tok_rbrack")
+                self.accept("tok_semicolon")
+
+                node=create_node(ND_ARRAY_DECL, chaine=token[1])
+                node.array_size=size_token[1]
+                return node
+            else:
+                self.accept("tok_semicolon")
+                return create_node(ND_DECL, chaine=token[1]) 
 
 def parse(source_code):
     """Parse source code and return AST"""

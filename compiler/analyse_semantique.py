@@ -2,7 +2,8 @@ from analyse_syntaxique import (
     Nd, parse,
     ND_CONST, ND_NOT, ND_NEG, ND_ADD, ND_SUB, ND_MUL, ND_DIV,
     ND_LT, ND_GT, ND_LE, ND_GE, ND_EQ, ND_NE,
-    ND_IDENT, ND_DECL, ND_ASSIGN, ND_IF, ND_WHILE, ND_DEBUG, ND_BLOCK, ND_DROP,ND_FOR,
+    ND_IDENT, ND_DECL, ND_ASSIGN, ND_IF, ND_WHILE, ND_DEBUG, ND_BLOCK, ND_DROP,
+    ND_ARRAY_DECL, ND_ARRAY_ACCESS, ND_ARRAY_ASSIGN, ND_DOWHILE
 )
 
 
@@ -10,6 +11,7 @@ class SymbolTable:
     def __init__(self):
         self.scopes = [{}]  
         self.next_address = 0
+        self.array_info={}
 
     def enter_scope(self):
         """Enter a new scope"""
@@ -22,7 +24,7 @@ class SymbolTable:
         scope = self.scopes.pop()
         return len(scope)
 
-    def declare(self, name):
+    def declare(self, name, array_size=None):
         """Declare a variable in current scope"""
         current_scope = self.scopes[-1]
         if name in current_scope:
@@ -30,8 +32,20 @@ class SymbolTable:
         
         address = self.next_address
         current_scope[name] = address
-        self.next_address += 1
+
+        if array_size:
+            self.array_info[address]=array_size
+            self.next_address+=array_size
+        else:
+            self.next_address += 1
+
         return address
+    
+    def is_array(self, address):
+        return address in self.array_info
+    
+    def get_array_size(self,address):
+        return self.array_info.get(address)
 
     def lookup(self, name):
         """Look up a variable in all scopes (innermost first)"""
@@ -241,34 +255,43 @@ class CodeGenerator:
     def gen_nd_while(self, node):
         L_start = new_label()
         L_end = new_label()
+        
         print("."+L_start)
 
         self.generate(node.enfant[0])  # Condition
-
         print("jumpf", L_end)
-
         self.generate(node.enfant[1])  # Body
-
         print("jump", L_start)
-
         print("."+L_end)
 
-    def gen_nd_for(self, node):
-        L_start= new_label()
-        L_end= new_label()
-        self.generate(node.enfant[0]) # intialisation 
-        print(".",L_start)
+    def gen_nd_dowhile(self, node):
+        L_start=new_label()
+        L_condition=new_label()
 
+        print(f".{L_start}")
+        self.generate(node.enfant[0]) #on execute le corps 
+        print(f".{L_condition}")
         self.generate(node.enfant[1]) #condition
-        print("jumpf",L_end)
+        print("jumpt", L_start) #jump back if true
+    
+    def analyze_nd_array_access(self,node):
+        self.analyze(node.enfant[1])
+        ident_node=node.enfant[0]
+        ident_node.address=self.symbol_table.lookup(ident_node.chaine)
 
-        self.generate(node.enfant[3]) #corps
-
-        self.generate(node.enfant[2]) # incremen
-
-        print("jump",L_start)
-
-        print(".",L_end)
+        #verifier si c'est acc un array
+        if not self.symbol_table.is_array(ident_node.address):
+            raise TypeError(f"'{ident_node.chaine}' is not an array")
+        
+    def _count_all_declarations(self,node):
+        count=0
+        if node.type==ND_DECL:
+            return 1
+        if node.type==ND_ARRAY_DECL:
+            return node.array_size
+        for child in node.enfant:
+            count+=self._count_all_declarations(child)
+        return count
 
 
 def compile_code(source_code, show_ast=False):
@@ -311,6 +334,6 @@ if __name__ == "__main__":
 
     print("\n--- Test 8: simple while ---")
     compile_code("{ int x; x=0; while (x<5) { debug x; x = x + 1; } }",show_ast=True)
-   
-    print("\n--- Test 9: simple for ---")
-    compile_code("{ int i; for (i = 0; i < 5; i = i + 1) { debug i; } }", show_ast=True)
+
+    print("\n--- Test: Do-While ---")
+    compile_code("{ int x; x = 0; do { debug x; x = x + 1;} while (x < 3);}", show_ast=True)
