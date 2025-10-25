@@ -325,8 +325,6 @@ class CodeGenerator:
         func_name=node.chaine
         print(f".{func_name}")
         print("push BP")
-        print("move SP, BP")
-
         # paramètres déjà sur la pile → réserve variables locales
         body = node.enfant[-1]
         local_vars=sum(1 for c in body.enfant if c.type==ND_DECL)
