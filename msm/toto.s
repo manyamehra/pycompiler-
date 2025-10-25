@@ -1,24 +1,23 @@
 .start
 resn 1
-push 0
+.carre
+push BP
+move SP, BP
+get 0
+get 0
+mul
+pop BP
+ret
+pop BP
+ret
+prep carre
+push 4
+call 1
 dup
-set 0
+set 1
 drop 1
-.L3
-get 0
-push 5
-cmplt
-jumpf L4
-get 0
+get 1
 send
-get 0
-push 1
-add
-dup
-set 0
-drop 1
-jump L3
-.L4
-drop 1
+drop 2
 halt
 .end

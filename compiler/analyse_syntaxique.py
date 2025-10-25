@@ -154,7 +154,22 @@ class Parser:
 
         if self.check("tok_identifiant"):
             token = self.accept("tok_identifiant")
+            # --- Vérifie si c'est un appel de fonction ---
+            if self.check("tok_lparen"):
+                self.accept("tok_lparen")
+                args = []
+                if not self.check("tok_rparen"):
+                    while True:
+                        args.append(self.parse_expression())
+                        if self.check("tok_rparen"):
+                            break
+                        self.accept("tok_comma")
+                self.accept("tok_rparen")
 
+                func_node = create_node(ND_FUNC_CALL, chaine=token[1])
+                for a in args:
+                    func_node.ajouter_enfant(a)
+                return func_node
             #Check for array access
             if self.check("tok_lbrack"):
                 self.accept("tok_lbrack")
@@ -163,6 +178,7 @@ class Parser:
 
                 ident_node=create_node(ND_IDENT, chaine=token[1])
                 return create_node(ND_ARRAY_ACCESS, children=[ident_node, index_expr])
+            
             return create_node(ND_IDENT, chaine=token[1])
 
         if self.check("tok_motscle"):
@@ -177,6 +193,27 @@ class Parser:
 
     def parse_instruction(self):
         """Parse instructions"""
+        # Function definition
+        if self.check("tok_motscle") and self.lexer.peek()[1] == "def":
+            self.accept("tok_motscle")
+            func_name = self.accept("tok_identifiant")[1]
+            self.accept("tok_lparen")
+            params = []
+            if not self.check("tok_rparen"):
+                while True: 
+                    param = self.accept("tok_identifiant")[1]
+                    params.append(param)
+                    if self.check("tok_rparen"):
+                        break
+                    self.accept("tok_comma")
+            self.accept("tok_rparen")
+            body = self.parse_instruction()
+            func_node = create_node(ND_FUNC_DECL, chaine=func_name)
+            for p in params:
+                func_node.ajouter_enfant(create_node(ND_IDENT, chaine=p))  # Fixed typo: cahine -> chaine
+            func_node.ajouter_enfant(body)
+            return func_node
+        
         # Variable declaration
         if self.check("tok_motscle") and self.lexer.peek()[1] == "int":
             self.accept("tok_motscle")
@@ -255,25 +292,7 @@ class Parser:
             return create_node(ND_DOWHILE, children=[body, condition])
 
         # Function definition
-        if self.check("tok_motscle") and self.lexer.peek()[1] == "def":
-            self.accept("tok_motscle")
-            func_name = self.accept("tok_identifiant")[1]
-            self.accept("tok_lparen")
-            params = []
-            if not self.check("tok_rparen"):
-                while True: 
-                    param = self.accept("tok_identifiant")[1]
-                    params.append(param)
-                    if self.check("tok_rparen"):
-                        break
-                    self.accept("tok_comma")
-            self.accept("tok_rparen")
-            body = self.parse_instruction()
-            func_node = create_node(ND_FUNC_DECL, chaine=func_name)
-            for p in params:
-                func_node.ajouter_enfant(create_node(ND_IDENT, chaine=p))  # Fixed typo: cahine -> chaine
-            func_node.ajouter_enfant(body)
-            return func_node
+    
 
         # Return statement
         if self.check("tok_motscle") and self.lexer.peek()[1] == "return":

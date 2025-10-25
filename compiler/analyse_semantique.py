@@ -286,7 +286,7 @@ class CodeGenerator:
         L_start= new_label()
         L_end= new_label()
         self.generate(node.enfant[0]) # intialisation 
-        print(".",L_start)
+        print("."+L_start)
 
         self.generate(node.enfant[1]) #condition
         print("jumpf",L_end)
@@ -297,7 +297,7 @@ class CodeGenerator:
 
         print("jump",L_start)
 
-        print(".",L_end)
+        print("."+L_end)
 
     def gen_nd_while(self, node):
         L_start = new_label()
