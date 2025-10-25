@@ -87,6 +87,21 @@ class SemanticAnalyzer:
     def analyze_nd_ident(self, node):
         """Look up identifier and store its address"""
         node.address = self.symbol_table.lookup(node.chaine)
+    
+    def analyze_nd_func_decl(self, node):
+        # Nouvelle portée pour les parametre
+        self.symbol_table.enter_scope()
+        for param_node in node.enfant[:-1]: #tous sauf le corps 
+            self.symbol_table.declare(param_node.chaine)
+        self.analyze(node.enfant[-1]) # corps
+        self.symbol_table.leave_scope()
+
+    def analyze_nd_func_call(self, node):
+        for arg in node.enfant:
+            self.analyze(arg)
+
+    def analyze_nd_return(self, node):
+        self.analyze(node.enfant[0])
 
     def analyze_nd_decl(self, node):
         """Declare variable and store its address"""
@@ -291,6 +306,38 @@ class CodeGenerator:
         self.generate(node.enfant[1]) #condition
         print("jumpt", L_start) #jump back if true
     
+    def gen_nd_func_decl(self, node):
+        func_name=node.chaine
+        print(f".{func_name}")
+        print("push BP")
+        print("move SP, BP")
+
+        # paramètres déjà sur la pile → réserve variables locales
+        body = node.enfant[-1]
+        local_vars=sum(1 for c in body.enfant if c.type==ND_DECL)
+        if local_vars > 0:
+            print("resn",local_vars)
+
+        #genere le corps
+        self.generate(body)
+
+        print("pop BP")
+        print("ret")
+
+    def gen_nd_func_call(self, node):
+        func_name = node.chaine
+        n_args= len(node.enfant)
+        
+        print(f"prep {func_name}")
+        for arg in node.enfant:
+            self.generate(arg)
+        print(f"call {n_args}")
+
+    def gen_nd_return(self,node):
+        self.generate(node.enfant[0])
+        print("pop BP")
+        print("ret")
+    
     def analyze_nd_array_access(self,node):
         self.analyze(node.enfant[1])
         ident_node=node.enfant[0]
@@ -357,3 +404,15 @@ if __name__ == "__main__":
 
     print("\n--- Test 10: simple for ---")
     compile_code("{ int i; for (i = 0; i < 5; i = i + 1) { debug i; } }", show_ast=True)
+    
+    print("\n--- Test 11: fonction test  ---")
+    compile_code("""{ 
+    def carre(x) 
+    { 
+        return x * x; 
+    }
+        int y;
+        y = carre(4);
+        debug y;
+    }""", show_ast=True)
+

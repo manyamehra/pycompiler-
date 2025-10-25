@@ -56,6 +56,9 @@ ND_DOWHILE="nd_dowhile"
 ND_ARRAY_DECL="nd_array_decl"
 ND_ARRAY_ACCESS="nd_array_access"
 ND_ARRAY_ASSIGN="nd_array_assign"
+ND_FUNC_DECL="nd_func_decl"
+ND_FUNC_CALL="nd_func_call"
+ND_RETURN="nd_return"
 
 # Binary operators table
 BINOPS = {
@@ -250,6 +253,53 @@ class Parser:
             self.accept("tok_semicolon")
 
             return create_node(ND_DOWHILE, children=[body, condition])
+        # function définition
+
+        if self.check("tok_motscles") and self.lexer.peek()[1]=="def":
+            self.accept("tok_motscle")
+            func_name=self.accept("tok_identifiant")[1]
+            self.accept("tok_lparen")
+            params=[]
+            if not self.check("tok_rparen"):
+                while True: 
+                    param=self.accept("tok_identifiant")[1]
+                    params.append(param)
+                    if self.check("tok_rparen"):
+                        break
+                    self.accept("tok_comma")
+            self.accept("tok_rparen")
+            body=self.parse_instruction()
+            func_node=create_node(ND_FUNC_DECL,chaine=func_name)
+            for p in params:
+                func_node.ajouter_enfant(create_node(ND_IDENT,cahine=p))
+            func_node.ajouter_enfant(body)
+            return func_node
+        #function call
+        if self.check("tok_identifiant"):
+            ident = self.accept("tok_identifiant")[1]
+            if self.check("tok_lparen"):
+                self.accept("tok_lparen")
+                args=[]
+                if not self.check("tok_rparen"):
+                    while True:
+                        arg=self.check("tok_identifiant").peek()[1]
+                        args.append(self.parse_expression())
+                        if self.check("tok_rparen"):
+                            break
+                        self.accept("tok_comma")
+                self.accept("tok_rparen")
+                self.accept("tok_semicolon")
+                node = create_node(ND_FUNC_CALL, chaine=ident)
+                for a in args:
+                    node.ajouter_enfant(a)
+                return node 
+        # Return 
+        if self.check("tok_motscle") and self.lexer.peek()[1]=="return":
+            self.accept("tok_motscle")
+            expr = self.parse_expression()
+            self.accept("tok_semicolin")
+            return create_node(ND_RETURN, children=[expr])
+
 
         # Assignment or expression statement
         if self.check("tok_identifiant"):
