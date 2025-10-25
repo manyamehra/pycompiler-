@@ -53,9 +53,9 @@ ND_BLOCK = "nd_block"
 ND_DROP = "nd_drop"
 ND_FOR="nd_for"
 ND_DOWHILE="nd_dowhile"
-ND_ARRAY_DECL="nd_array_decl"
-ND_ARRAY_ACCESS="nd_array_access"
-ND_ARRAY_ASSIGN="nd_array_assign"
+ND_ARRAY_DECL="nd_array_decl" #int arr[10];
+ND_ARRAY_ACCESS="nd_array_access" #arr[5]
+ND_ARRAY_ASSIGN="nd_array_assign" #arr[5]=10;
 ND_FUNC_DECL="nd_func_decl"
 ND_FUNC_CALL="nd_func_call"
 ND_RETURN="nd_return"
@@ -177,7 +177,7 @@ class Parser:
 
     def parse_instruction(self):
         """Parse instructions"""
-        # Variable declaration
+        # Array declaration
         if self.check("tok_motscle") and self.lexer.peek()[1] == "int":
             self.accept("tok_motscle")
             token = self.accept("tok_identifiant")
@@ -333,24 +333,6 @@ class Parser:
         self.accept("tok_semicolon")
         return create_node(ND_DROP, children=[expr])
         
-        #Array decalaration
-        if self.check("tok_motscle") and self.lexer.peek()[1]=="int":
-            self.accept("tok_motscle")
-            token=self.accept("tok_identifiant")
-
-            #Check si c'est la déclaration d'un array
-            if self.check("tok_lbrack"):
-                self.accept("tok_lbrack")
-                size_token=self.accept("tok_chiffre")
-                self.accept("tok_rbrack")
-                self.accept("tok_semicolon")
-
-                node=create_node(ND_ARRAY_DECL, chaine=token[1])
-                node.array_size=size_token[1]
-                return node
-            else:
-                self.accept("tok_semicolon")
-                return create_node(ND_DECL, chaine=token[1]) 
 
 def parse(source_code):
     """Parse source code and return AST"""
