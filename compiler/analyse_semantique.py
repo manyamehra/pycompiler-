@@ -398,8 +398,11 @@ def compile_code(source_code, show_ast=False):
     
     # Code generation
     print("Instructions:")
+    print(".start")
     generator = CodeGenerator(symbol_table)
     generator.generate(ast)
+    print("halt")
+    print(".end")
 
 
 if __name__ == "__main__":
