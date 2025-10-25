@@ -131,6 +131,21 @@ class SemanticAnalyzer:
             self.analyze(child)
         
         node.drop_count = self.symbol_table.leave_scope()
+
+    def analyze_nd_array_decl(self, node):
+        """Declare array and store its address"""
+        node.address = self.symbol_table.declare(node.chaine, node.array_size)
+
+    def analyze_nd_array_assign(self, node):
+        """Analyze array assignment"""
+        self.analyze(node.enfant[1])  # index
+        self.analyze(node.enfant[2])  # value
+        
+        ident_node = node.enfant[0]
+        ident_node.address = self.symbol_table.lookup(ident_node.chaine)
+        
+        if not self.symbol_table.is_array(ident_node.address):
+            raise TypeError(f"'{ident_node.chaine}' is not an array")
     
     def _count_all_declarations(self, node):
         """Count all declarations recursively"""
@@ -227,7 +242,7 @@ class CodeGenerator:
 
     def gen_nd_drop(self, node):
         self.generate(node.enfant[0])
-        print("drop")
+        print("drop", 1)
 
     def gen_nd_decl(self, node):
         """Declarations don't generate code by themselves"""
@@ -337,7 +352,26 @@ class CodeGenerator:
         self.generate(node.enfant[0])
         print("pop BP")
         print("ret")
-    
+
+    def gen_nd_array_decl(self, node):
+        """Array declarations reserve space during resn"""
+        pass
+
+    def gen_nd_array_access(self, node):
+        """Generate code for array access: arr[index]"""
+        print("push", node.enfant[0].address)
+        self.generate(node.enfant[1])  # index
+        print("add")
+        print("read")
+
+    def gen_nd_array_assign(self, node):
+        """Generate code for array assignment: arr[index] = value;"""
+        self.generate(node.enfant[2])  # value
+        print("push", node.enfant[0].address)
+        self.generate(node.enfant[1])  # index
+        print("add")
+        print("write")
+        
     def analyze_nd_array_access(self,node):
         self.analyze(node.enfant[1])
         ident_node=node.enfant[0]

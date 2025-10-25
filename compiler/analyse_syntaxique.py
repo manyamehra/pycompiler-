@@ -70,9 +70,9 @@ BINOPS = {
     "tok_gt":     (5, "L", ND_GT),
     "tok_le":     (5, "L", ND_LE),
     "tok_ge":     (5, "L", ND_GE),
-    "tok_equalto":     (5, "L", ND_EQ),
-    "tok_notequal":     (5, "L", ND_NE),
-      "tok_egal":    (1, "R", ND_ASSIGN), 
+    "tok_equalto": (5, "L", ND_EQ),
+    "tok_notequal": (5, "L", ND_NE),
+    "tok_egal": (5, "R", ND_ASSIGN), 
 }
 
 
@@ -177,7 +177,7 @@ class Parser:
 
     def parse_instruction(self):
         """Parse instructions"""
-        # Array declaration
+        # Variable declaration
         if self.check("tok_motscle") and self.lexer.peek()[1] == "int":
             self.accept("tok_motscle")
             token = self.accept("tok_identifiant")
@@ -215,8 +215,9 @@ class Parser:
                 children.append(else_stmt)
             
             return create_node(ND_IF, children=children)
-        # for statement 
-        if self.check("tok_motscle") and self.lexer.peek()[1]=="for":
+
+        # For statement 
+        if self.check("tok_motscle") and self.lexer.peek()[1] == "for":
             self.accept("tok_motscle")
             self.accept("tok_lparen")
             E1 = self.parse_expression()
@@ -237,86 +238,84 @@ class Parser:
             body = self.parse_instruction()
             return create_node(ND_WHILE, children=[condition, body])
         
-        # Do While statement
+        # Do-While statement
         if self.check("tok_motscle") and self.lexer.peek()[1] == "do":
-            self.accept("tok_motscle") #consume 'do'
-            body=self.parse_instruction()
-
-            #On attend à voir 'while'
-            if not (self.check("tok_motscle") and self.lexer.peek()[1]=="while"):
+            self.accept("tok_motscle")
+            body = self.parse_instruction()
+            
+            if not (self.check("tok_motscle") and self.lexer.peek()[1] == "while"):
                 raise SyntaxError(f"Expected 'while' after do-body at line {self.lexer.line}")
-            self.accept("tok_motscle") #consume 'while'
-
+            self.accept("tok_motscle")
+            
             self.accept("tok_lparen")
-            condition=self.parse_expression()
+            condition = self.parse_expression()
             self.accept("tok_rparen")
             self.accept("tok_semicolon")
-
+            
             return create_node(ND_DOWHILE, children=[body, condition])
-        # function définition
 
-        if self.check("tok_motscles") and self.lexer.peek()[1]=="def":
+        # Function definition
+        if self.check("tok_motscle") and self.lexer.peek()[1] == "def":
             self.accept("tok_motscle")
-            func_name=self.accept("tok_identifiant")[1]
+            func_name = self.accept("tok_identifiant")[1]
             self.accept("tok_lparen")
-            params=[]
+            params = []
             if not self.check("tok_rparen"):
                 while True: 
-                    param=self.accept("tok_identifiant")[1]
+                    param = self.accept("tok_identifiant")[1]
                     params.append(param)
                     if self.check("tok_rparen"):
                         break
                     self.accept("tok_comma")
             self.accept("tok_rparen")
-            body=self.parse_instruction()
-            func_node=create_node(ND_FUNC_DECL,chaine=func_name)
+            body = self.parse_instruction()
+            func_node = create_node(ND_FUNC_DECL, chaine=func_name)
             for p in params:
-                func_node.ajouter_enfant(create_node(ND_IDENT,cahine=p))
+                func_node.ajouter_enfant(create_node(ND_IDENT, chaine=p))  # Fixed typo: cahine -> chaine
             func_node.ajouter_enfant(body)
             return func_node
-        #function call
+
+        # Return statement
+        if self.check("tok_motscle") and self.lexer.peek()[1] == "return":
+            self.accept("tok_motscle")
+            expr = self.parse_expression()
+            self.accept("tok_semicolon")  # Fixed typo: tok_semicolin -> tok_semicolon
+            return create_node(ND_RETURN, children=[expr])
+
+        # CONSOLIDATED: Assignment, array assignment, function call, or expression statement
         if self.check("tok_identifiant"):
-            ident = self.accept("tok_identifiant")[1]
+            var_token = self.accept("tok_identifiant")
+            
+            # Check for function call: ident(...)
             if self.check("tok_lparen"):
                 self.accept("tok_lparen")
-                args=[]
+                args = []
                 if not self.check("tok_rparen"):
                     while True:
-                        arg=self.check("tok_identifiant").peek()[1]
                         args.append(self.parse_expression())
                         if self.check("tok_rparen"):
                             break
                         self.accept("tok_comma")
                 self.accept("tok_rparen")
                 self.accept("tok_semicolon")
-                node = create_node(ND_FUNC_CALL, chaine=ident)
+                node = create_node(ND_FUNC_CALL, chaine=var_token[1])
                 for a in args:
                     node.ajouter_enfant(a)
-                return node 
-        # Return 
-        if self.check("tok_motscle") and self.lexer.peek()[1]=="return":
-            self.accept("tok_motscle")
-            expr = self.parse_expression()
-            self.accept("tok_semicolin")
-            return create_node(ND_RETURN, children=[expr])
-
-
-        # Assignment or expression statement
-        if self.check("tok_identifiant"):
-            var_token = self.accept("tok_identifiant")
-
-            #Check for array assignment: arr[index]=value;
+                return node
+            
+            # Check for array assignment: arr[index] = value;
             if self.check("tok_lbrack"):
                 self.accept("tok_lbrack")
-                index_expr=self.parse_expression()
+                index_expr = self.parse_expression()
                 self.accept("tok_rbrack")
                 self.accept("tok_egal")
-                value_expr=self.parse_expression()
+                value_expr = self.parse_expression()
                 self.accept("tok_semicolon")
-
-                indent_node=create_node(ND_IDENT, chaine=var_token[1])
-                return create_node(ND_ASSIGN, children=[indent_node,expr])
+                
+                ident_node = create_node(ND_IDENT, chaine=var_token[1])
+                return create_node(ND_ARRAY_ASSIGN, children=[ident_node, index_expr, value_expr])
             
+            # Check for regular assignment: ident = value;
             if self.check("tok_egal"):
                 self.accept("tok_egal")
                 expr = self.parse_expression()
@@ -324,11 +323,12 @@ class Parser:
                 ident_node = create_node(ND_IDENT, chaine=var_token[1])
                 return create_node(ND_ASSIGN, children=[ident_node, expr])
             
-            else:
-                self.accept("tok_semicolon")
-                ident_node=create_node(ND_IDENT, chaine=var_token[1])
-                return create_node(ND_DROP, children=[ident_node])
+            # Expression statement: just ident;
+            self.accept("tok_semicolon")
+            ident_node = create_node(ND_IDENT, chaine=var_token[1])
+            return create_node(ND_DROP, children=[ident_node])
 
+        # Generic expression statement
         expr = self.parse_expression()
         self.accept("tok_semicolon")
         return create_node(ND_DROP, children=[expr])
