@@ -218,8 +218,21 @@ class Parser:
         if self.check("tok_motscle") and self.lexer.peek()[1] == "int":
             self.accept("tok_motscle")
             token = self.accept("tok_identifiant")
-            self.accept("tok_semicolon")
-            return create_node(ND_DECL, chaine=token[1])
+            
+            # Check if it's an array declaration: int arr[10];
+            if self.check("tok_lbrack"):
+                self.accept("tok_lbrack")
+                size_token = self.accept("tok_chiffre")
+                self.accept("tok_rbrack")
+                self.accept("tok_semicolon")
+                
+                node = create_node(ND_ARRAY_DECL, chaine=token[1])
+                node.array_size = size_token[1]
+                return node
+            else:
+                # Regular variable: int x;
+                self.accept("tok_semicolon")
+                return create_node(ND_DECL, chaine=token[1])
 
         # Debug statement
         if self.check("tok_motscle") and self.lexer.peek()[1] == "debug":
@@ -292,35 +305,36 @@ class Parser:
             return create_node(ND_DOWHILE, children=[body, condition])
 
         # Function definition
-    
+        if self.check("tok_motscle") and self.lexer.peek()[1] == "def":
+            self.accept("tok_motscle")
+            func_name = self.accept("tok_identifiant")[1]
+            self.accept("tok_lparen")
+            params = []
+            if not self.check("tok_rparen"):
+                while True: 
+                    param = self.accept("tok_identifiant")[1]
+                    params.append(param)
+                    if self.check("tok_rparen"):
+                        break
+                    self.accept("tok_comma")
+            self.accept("tok_rparen")
+            body = self.parse_instruction()
+            func_node = create_node(ND_FUNC_DECL, chaine=func_name)
+            for p in params:
+                func_node.ajouter_enfant(create_node(ND_IDENT, chaine=p))
+            func_node.ajouter_enfant(body)
+            return func_node
 
         # Return statement
         if self.check("tok_motscle") and self.lexer.peek()[1] == "return":
             self.accept("tok_motscle")
             expr = self.parse_expression()
-            self.accept("tok_semicolon")  # Fixed typo: tok_semicolin -> tok_semicolon
+            self.accept("tok_semicolon")
             return create_node(ND_RETURN, children=[expr])
 
-        # CONSOLIDATED: Assignment, array assignment, function call, or expression statement
+        # Assignment or expression statement
         if self.check("tok_identifiant"):
             var_token = self.accept("tok_identifiant")
-            
-            # Check for function call: ident(...)
-            if self.check("tok_lparen"):
-                self.accept("tok_lparen")
-                args = []
-                if not self.check("tok_rparen"):
-                    while True:
-                        args.append(self.parse_expression())
-                        if self.check("tok_rparen"):
-                            break
-                        self.accept("tok_comma")
-                self.accept("tok_rparen")
-                self.accept("tok_semicolon")
-                node = create_node(ND_FUNC_CALL, chaine=var_token[1])
-                for a in args:
-                    node.ajouter_enfant(a)
-                return node
             
             # Check for array assignment: arr[index] = value;
             if self.check("tok_lbrack"):
@@ -342,7 +356,28 @@ class Parser:
                 ident_node = create_node(ND_IDENT, chaine=var_token[1])
                 return create_node(ND_ASSIGN, children=[ident_node, expr])
             
-            # Expression statement: just ident;
+            # Expression statement (likely function call or standalone identifier)
+            # Put it back and parse as expression
+            # Since we already consumed it, check if there's more
+            if self.check("tok_lparen"):
+                # It's a function call as a statement
+                self.accept("tok_lparen")
+                args = []
+                if not self.check("tok_rparen"):
+                    while True:
+                        args.append(self.parse_expression())
+                        if self.check("tok_rparen"):
+                            break
+                        self.accept("tok_comma")
+                self.accept("tok_rparen")
+                self.accept("tok_semicolon")
+                
+                node = create_node(ND_FUNC_CALL, chaine=var_token[1])
+                for a in args:
+                    node.ajouter_enfant(a)
+                return create_node(ND_DROP, children=[node])
+            
+            # Just an identifier as a statement
             self.accept("tok_semicolon")
             ident_node = create_node(ND_IDENT, chaine=var_token[1])
             return create_node(ND_DROP, children=[ident_node])

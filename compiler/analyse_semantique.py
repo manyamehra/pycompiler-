@@ -135,6 +135,15 @@ class SemanticAnalyzer:
     def analyze_nd_array_decl(self, node):
         """Declare array and store its address"""
         node.address = self.symbol_table.declare(node.chaine, node.array_size)
+    
+    def analyze_nd_array_access(self,node):
+        self.analyze(node.enfant[1])
+        ident_node=node.enfant[0]
+        ident_node.address = self.symbol_table.lookup(ident_node.chaine)
+
+        # Verify it's actually an array
+        if not self.symbol_table.is_array(ident_node.address):
+            raise TypeError(f"'{ident_node.chaine}' is not an array")
 
     def analyze_nd_array_assign(self, node):
         """Analyze array assignment"""
@@ -152,7 +161,8 @@ class SemanticAnalyzer:
         count = 0
         if node.type == ND_DECL:
             return 1
-        
+        if node.type == ND_ARRAY_DECL:  # NEW
+            return node.array_size
         for child in node.enfant:
             count += self._count_all_declarations(child)
         
@@ -357,39 +367,19 @@ class CodeGenerator:
 
     def gen_nd_array_access(self, node):
         """Generate code for array access: arr[index]"""
-        print("push", node.enfant[0].address)
+        print("push", node.enfant[0].address) #get base address of array
         self.generate(node.enfant[1])  # index
         print("add")
         print("read")
 
     def gen_nd_array_assign(self, node):
         """Generate code for array assignment: arr[index] = value;"""
-        self.generate(node.enfant[2])  # value
         print("push", node.enfant[0].address)
         self.generate(node.enfant[1])  # index
         print("add")
+        self.generate(node.enfant[2])
         print("write")
         
-    def analyze_nd_array_access(self,node):
-        self.analyze(node.enfant[1])
-        ident_node=node.enfant[0]
-        ident_node.address=self.symbol_table.lookup(ident_node.chaine)
-
-        #verifier si c'est acc un array
-        if not self.symbol_table.is_array(ident_node.address):
-            raise TypeError(f"'{ident_node.chaine}' is not an array")
-        
-    def _count_all_declarations(self,node):
-        count=0
-        if node.type==ND_DECL:
-            return 1
-        if node.type==ND_ARRAY_DECL:
-            return node.array_size
-        for child in node.enfant:
-            count+=self._count_all_declarations(child)
-        return count
-
-
 def compile_code(source_code, show_ast=False):
     """Complete compilation pipeline"""
     # Parse
@@ -448,3 +438,21 @@ if __name__ == "__main__":
         debug y;
     }""", show_ast=True)
 
+    print("\n--- Test: Array with Loop ---")
+    compile_code("""
+    {
+        int arr[5];
+        int i;
+        i = 0;
+        while (i < 5) {
+            arr[i] = i * 10;
+            i = i + 1;
+        }
+        
+        i = 0;
+        while (i < 5) {
+            debug arr[i];
+            i = i + 1;
+        }
+    }
+    """, show_ast=True)
