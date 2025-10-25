@@ -334,7 +334,6 @@ class CodeGenerator:
     def gen_nd_func_decl(self, node):
         func_name=node.chaine
         print(f".{func_name}")
-        print("push BP")
         # paramètres déjà sur la pile → réserve variables locales
         body = node.enfant[-1]
         local_vars=sum(1 for c in body.enfant if c.type==ND_DECL)
@@ -344,7 +343,6 @@ class CodeGenerator:
         #genere le corps
         self.generate(body)
 
-        print("pop BP")
         print("ret")
 
     def gen_nd_func_call(self, node):
@@ -358,7 +356,6 @@ class CodeGenerator:
 
     def gen_nd_return(self,node):
         self.generate(node.enfant[0])
-        print("pop BP")
         print("ret")
 
     def gen_nd_array_decl(self, node):
@@ -432,12 +429,12 @@ if __name__ == "__main__":
     
     print("\n--- Test 11: fonction test  ---")
     compile_code("""{ 
-    def carre(x) 
+    def addition(x) 
     { 
-        return x * x; 
+        return x + x; 
     }
         int y;
-        y = carre(4);
+        y = addition(4);
         debug y;
     }""", show_ast=True)
 
