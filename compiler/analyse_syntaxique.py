@@ -9,6 +9,8 @@ class Nd:
         self.enfant = []
         self.address = None  # For semantic analysis
         self.array_size= None 
+        self.is_pointer = False  # NEW: track if variable is a pointer
+
     
     def ajouter_enfant(self, enfant_node):
         """Ajoute un enfant au nœud"""
@@ -59,6 +61,10 @@ ND_ARRAY_ASSIGN="nd_array_assign" #arr[5]=10;
 ND_FUNC_DECL="nd_func_decl"
 ND_FUNC_CALL="nd_func_call"
 ND_RETURN="nd_return"
+ND_PTR_DECL = "nd_ptr_decl"        # int* ptr;
+ND_ADDRESS_OF = "nd_address_of"    # &x
+ND_DEREF = "nd_deref"              # *ptr (as expression)
+ND_DEREF_ASSIGN = "nd_deref_assign" # *ptr = value;
 
 # Binary operators table
 BINOPS = {
@@ -125,15 +131,34 @@ class Parser:
         return left
 
     def parse_primary(self):
+
         """Parse primary expressions (unary operators and atoms)"""
+        
+        # Address-of operator: &x
+        if self.check("tok_ampersand"):
+            self.accept("tok_ampersand")
+            operand = self.parse_primary()
+            return create_node(ND_ADDRESS_OF, children=[operand])
+        
+        # Dereference or negation
+        if self.check("tok_star"):
+            self.accept("tok_star")
+            # Need to check context - is this dereference or multiply?
+            # In primary position, it's always dereference
+            operand = self.parse_primary()
+            return create_node(ND_DEREF, children=[operand])
+        
+        # Logical NOT
         if self.check("tok_not"):
             self.accept("tok_not")
             return create_node(ND_NOT, children=[self.parse_primary()])
         
+        # Unary minus
         if self.check("tok_minus"):
             self.accept("tok_minus")
             return create_node(ND_NEG, children=[self.parse_primary()])
         
+        # Unary plus (just ignored)
         if self.check("tok_plus"):
             self.accept("tok_plus")
             return self.parse_primary()
@@ -214,13 +239,23 @@ class Parser:
             func_node.ajouter_enfant(body)
             return func_node
         
-        # Variable declaration
+        # Variable/Array/Pointer declaration
         if self.check("tok_motscle") and self.lexer.peek()[1] == "int":
             self.accept("tok_motscle")
+            
+            # Check for pointer: int* ptr;
+            is_pointer = False
+            if self.check("tok_star"):
+                self.accept("tok_star")
+                is_pointer = True
+            
             token = self.accept("tok_identifiant")
             
             # Check if it's an array declaration: int arr[10];
             if self.check("tok_lbrack"):
+                if is_pointer:
+                    raise SyntaxError("Cannot have pointer to array (for now)")
+                
                 self.accept("tok_lbrack")
                 size_token = self.accept("tok_chiffre")
                 self.accept("tok_rbrack")
@@ -230,10 +265,15 @@ class Parser:
                 node.array_size = size_token[1]
                 return node
             else:
-                # Regular variable: int x;
+                # Regular variable or pointer
                 self.accept("tok_semicolon")
-                return create_node(ND_DECL, chaine=token[1])
-
+                if is_pointer:
+                    node = create_node(ND_PTR_DECL, chaine=token[1])
+                    node.is_pointer = True
+                    return node
+                else:
+                    return create_node(ND_DECL, chaine=token[1])
+    
         # Debug statement
         if self.check("tok_motscle") and self.lexer.peek()[1] == "debug":
             self.accept("tok_motscle")
@@ -381,6 +421,15 @@ class Parser:
             self.accept("tok_semicolon")
             ident_node = create_node(ND_IDENT, chaine=var_token[1])
             return create_node(ND_DROP, children=[ident_node])
+
+        # Add handling for dereference assignment: *ptr = value;
+        if self.check("tok_star"):
+            self.accept("tok_star")
+            ptr_expr = self.parse_primary()  # Get the pointer expression
+            self.accept("tok_egal")
+            value_expr = self.parse_expression()
+            self.accept("tok_semicolon")
+            return create_node(ND_DEREF_ASSIGN, children=[ptr_expr, value_expr])
 
         # Generic expression statement
         expr = self.parse_expression()

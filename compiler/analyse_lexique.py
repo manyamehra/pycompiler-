@@ -40,6 +40,7 @@ TOKEN_SPEC = [
     ("tok_espace",   r"[ \t]+"),
     ("tok_NEWLINE",  r"\n"),
     ("tok_MISMATCH", r"."),
+    ("tok_ampersand", r"&")
 ]
 
 

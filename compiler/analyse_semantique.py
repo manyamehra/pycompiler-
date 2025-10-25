@@ -4,6 +4,7 @@ from analyse_syntaxique import (
     ND_LT, ND_GT, ND_LE, ND_GE, ND_EQ, ND_NE,
     ND_IDENT, ND_DECL, ND_ASSIGN, ND_IF, ND_WHILE, ND_DEBUG, ND_BLOCK, ND_DROP,
     ND_ARRAY_DECL, ND_ARRAY_ACCESS, ND_ARRAY_ASSIGN, ND_DOWHILE,ND_FOR,
+    ND_PTR_DECL, ND_ADDRESS_OF, ND_DEREF, ND_DEREF_ASSIGN
 )
 
 
@@ -43,6 +44,9 @@ class SymbolTable:
     
     def is_array(self, address):
         return address in self.array_info
+    
+    def is_pointer(self, address):
+        return address in self.pointer_info
     
     def get_array_size(self,address):
         return self.array_info.get(address)
@@ -155,11 +159,39 @@ class SemanticAnalyzer:
         
         if not self.symbol_table.is_array(ident_node.address):
             raise TypeError(f"'{ident_node.chaine}' is not an array")
+        
+    def analyze_nd_ptr_decl(self, node):
+        """Declare pointer and store its address"""
+        node.address = self.symbol_table.declare(node.chaine, is_pointer=True)
+    
+    def analyze_nd_address_of(self, node):
+        """Analyze address-of operator"""
+        operand = node.enfant[0]
+        
+        # Can only take address of lvalues (identifiers, array elements)
+        if operand.type not in [ND_IDENT, ND_ARRAY_ACCESS]:
+            raise TypeError("Cannot take address of non-lvalue")
+        
+        self.analyze(operand)
+    
+    def analyze_nd_deref(self, node):
+        """Analyze dereference operator"""
+        self.analyze(node.enfant[0])
+        
+        # Optional: Check if dereferencing a pointer
+        # This would require type tracking, which is more complex
+    
+    def analyze_nd_deref_assign(self, node):
+        """Analyze pointer dereference assignment"""
+        self.analyze(node.enfant[0])  # pointer expression
+        self.analyze(node.enfant[1])  # value expression
     
     def _count_all_declarations(self, node):
         """Count all declarations recursively"""
         count = 0
         if node.type == ND_DECL:
+            return 1
+        if node.type == ND_PTR_DECL:
             return 1
         if node.type == ND_ARRAY_DECL:  # NEW
             return node.array_size
@@ -376,6 +408,44 @@ class CodeGenerator:
         print("add")
         self.generate(node.enfant[2])
         print("write")
+    
+    def gen_nd_ptr_decl(self, node):
+        """Pointer declarations reserve one slot like regular variables"""
+        pass
+    
+    def gen_nd_address_of(self, node):
+        """Generate code for address-of operator: &x"""
+        operand = node.enfant[0]
+        
+        if operand.type == ND_IDENT:
+            # Push the address (not the value) of the variable
+            print("push", operand.address)
+        elif operand.type == ND_ARRAY_ACCESS:
+            # For &arr[i], calculate arr_base + i
+            print("push", operand.enfant[0].address)
+            self.generate(operand.enfant[1])  # index
+            print("add")
+        else:
+            raise ValueError(f"Cannot take address of {operand.type}")
+        
+    def gen_nd_deref(self, node):
+        """Generate code for dereference: *ptr"""
+        # Evaluate the pointer expression to get an address
+        self.generate(node.enfant[0])
+        # Read from that address
+        print("read")
+    
+    def gen_nd_deref_assign(self, node):
+        """Generate code for *ptr = value;"""
+        # Evaluate the value
+        self.generate(node.enfant[1])
+        
+        # Evaluate the pointer to get address
+        self.generate(node.enfant[0])
+        
+        # Write value to address
+        print("write")
+    
         
 def compile_code(source_code, show_ast=False):
     """Complete compilation pipeline"""
@@ -454,5 +524,73 @@ if __name__ == "__main__":
             debug arr[i];
             i = i + 1;
         }
+    }
+    """, show_ast=True)
+
+    print("\n--- Test: Pointer Declaration ---")
+    compile_code("""
+    {
+        int x;
+        int* ptr;
+        x = 42;
+    }
+    """, show_ast=True)
+    
+    print("\n--- Test: Address-of Operator ---")
+    compile_code("""
+    {
+        int x;
+        int* ptr;
+        x = 42;
+        ptr = &x;
+        debug x;
+    }
+    """, show_ast=True)
+    
+    print("\n--- Test: Pointer Dereference ---")
+    compile_code("""
+    {
+        int x;
+        int* ptr;
+        x = 42;
+        ptr = &x;
+        debug *ptr;
+    }
+    """, show_ast=True)
+    
+    print("\n--- Test: Pointer Assignment ---")
+    compile_code("""
+    {
+        int x;
+        int* ptr;
+        x = 10;
+        ptr = &x;
+        *ptr = 99;
+        debug x;
+    }
+    """, show_ast=True)
+    
+    print("\n--- Test: Pointer to Array Element ---")
+    compile_code("""
+    {
+        int arr[5];
+        int* ptr;
+        arr[2] = 100;
+        ptr = &arr[2];
+        debug *ptr;
+        *ptr = 200;
+        debug arr[2];
+    }
+    """, show_ast=True)
+    
+    print("\n--- Test: Pointer Arithmetic (Simple) ---")
+    compile_code("""
+    {
+        int arr[5];
+        int* ptr;
+        arr[0] = 10;
+        arr[1] = 20;
+        ptr = &arr[0];
+        debug *ptr;
     }
     """, show_ast=True)
