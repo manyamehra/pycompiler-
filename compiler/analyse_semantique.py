@@ -12,7 +12,8 @@ class SymbolTable:
     def __init__(self):
         self.scopes = [{}]  
         self.next_address = 0
-        self.array_info={}
+        self.array_info = {}      # {address: size}
+        self.pointer_info = {}    # {address: True}
 
     def enter_scope(self):
         """Enter a new scope"""
@@ -25,8 +26,17 @@ class SymbolTable:
         scope = self.scopes.pop()
         return len(scope)
 
-    def declare(self, name, array_size=None):
-        """Declare a variable in current scope"""
+    def declare(self, name, array_size=None, is_pointer=False):
+        """Declare a variable in current scope
+        
+        Args:
+            name: Variable name
+            array_size: Size if declaring an array (None for regular variables)
+            is_pointer: True if declaring a pointer
+        
+        Returns:
+            address: The memory address allocated for this variable
+        """
         current_scope = self.scopes[-1]
         if name in current_scope:
             raise NameError(f"Variable '{name}' already declared in this scope")
@@ -34,21 +44,30 @@ class SymbolTable:
         address = self.next_address
         current_scope[name] = address
 
+        # Arrays take multiple slots
         if array_size:
-            self.array_info[address]=array_size
-            self.next_address+=array_size
+            self.array_info[address] = array_size
+            self.next_address += array_size
         else:
+            # Regular variables and pointers both take 1 slot
             self.next_address += 1
+        
+        # Track pointers separately
+        if is_pointer:
+            self.pointer_info[address] = True
 
         return address
     
     def is_array(self, address):
+        """Check if an address is an array"""
         return address in self.array_info
     
     def is_pointer(self, address):
+        """Check if an address is a pointer"""
         return address in self.pointer_info
     
-    def get_array_size(self,address):
+    def get_array_size(self, address):
+        """Get array size"""
         return self.array_info.get(address)
 
     def lookup(self, name):
@@ -57,8 +76,7 @@ class SymbolTable:
             if name in scope:
                 return scope[name]
         raise NameError(f"Variable '{name}' not declared")
-
-
+        
 # Label generation
 label_counter = 0
 
