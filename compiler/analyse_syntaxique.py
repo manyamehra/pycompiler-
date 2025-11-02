@@ -65,6 +65,7 @@ ND_PTR_DECL = "nd_ptr_decl"        # int* ptr;
 ND_ADDRESS_OF = "nd_address_of"    # &x
 ND_DEREF = "nd_deref"              # *ptr (as expression)
 ND_DEREF_ASSIGN = "nd_deref_assign" # *ptr = value;
+ND_FOR_DECL = "nd_for_decl"  # Special node for for-loop declaration+init
 
 # Binary operators table
 BINOPS = {
@@ -305,20 +306,45 @@ class Parser:
                 children.append(else_stmt)
             
             return create_node(ND_IF, children=children)
-
+        
         # For statement 
         if self.check("tok_motscle") and self.lexer.peek()[1] == "for":
             self.accept("tok_motscle")
             self.accept("tok_lparen")
-            E1 = self.parse_expression()
+            
+            # Check if first part is a declaration
+            has_decl = False
+            decl_node = None
+            
+            if self.check("tok_motscle") and self.lexer.peek()[1] == "int":
+                # Variable declaration: int i = 0
+                has_decl = True
+                self.accept("tok_motscle")
+                
+                var_name = self.accept("tok_identifiant")[1]
+                self.accept("tok_egal")
+                init_expr = self.parse_expression()
+                
+                # Create combined decl+init node
+                decl_node = create_node(ND_DECL, chaine=var_name)
+                ident_node = create_node(ND_IDENT, chaine=var_name)
+                assign_node = create_node(ND_ASSIGN, children=[ident_node, init_expr])
+                
+                # Create a special for-decl node that combines both
+                E1 = create_node(ND_FOR_DECL, children=[decl_node, assign_node])
+            else:
+                # Regular expression
+                E1 = self.parse_expression()
+            
             self.accept("tok_semicolon")
-            E2 = self.parse_expression()
+            E2 = self.parse_expression()  # Condition
             self.accept("tok_semicolon")
-            E3 = self.parse_expression()
+            E3 = self.parse_expression()  # Increment
             self.accept("tok_rparen")
-            I1 = self.parse_instruction()
+            I1 = self.parse_instruction()  # Body
             return create_node(ND_FOR, children=[E1, E2, E3, I1])
 
+       
         # While statement
         if self.check("tok_motscle") and self.lexer.peek()[1] == "while":
             self.accept("tok_motscle")
@@ -443,7 +469,6 @@ def parse(source_code):
     parser = Parser(lexer)
     ast = parser.parse_instruction()
     return ast
-
 
 if __name__ == "__main__":
     print("--- Test parsing ---")

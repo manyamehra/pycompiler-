@@ -204,6 +204,13 @@ class SemanticAnalyzer:
         self.analyze(node.enfant[0])  # pointer expression
         self.analyze(node.enfant[1])  # value expression
     
+    def analyze_nd_for_decl(self, node):
+        """Analyze for-loop declaration+initialization"""
+        # Analyze declaration
+        self.analyze(node.enfant[0])  # ND_DECL
+        # Analyze assignment
+        self.analyze(node.enfant[1])  # ND_ASSIGN
+    
     def _count_all_declarations(self, node):
         """Count all declarations recursively"""
         count = 0
@@ -464,6 +471,37 @@ class CodeGenerator:
         # Write value to address
         print("write")
     
+    def gen_nd_for_decl(self, node):
+        """Generate code for for-loop declaration+initialization"""
+        # Generate declaration (usually does nothing)
+        self.generate(node.enfant[0])
+        # Generate assignment
+        self.generate(node.enfant[1])
+
+        def gen_nd_for(self, node):
+            L_start = new_label()
+            L_end = new_label()
+            
+            # Initialization (might be ND_FOR_DECL or regular expression)
+            self.generate(node.enfant[0])
+            
+            print(f".{L_start}")
+            
+            # Condition
+            self.generate(node.enfant[1])
+            print("jumpf", L_end)
+            
+            # Body
+            self.generate(node.enfant[3])
+            
+            # Increment
+            self.generate(node.enfant[2])
+            
+            print("jump", L_start)
+            print(f".{L_end}")
+    
+    
+    
         
 def compile_code(source_code, show_ast=False):
     """Complete compilation pipeline"""
@@ -612,3 +650,7 @@ if __name__ == "__main__":
         debug *ptr;
     }
     """, show_ast=True)
+
+    print("\n Test: Boucle for (decl var erronée)")
+    compile_code("""
+    {for(int i =0; i<5; i=i+1){}}""", show_ast=True)
