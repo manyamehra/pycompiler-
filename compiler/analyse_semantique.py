@@ -503,7 +503,7 @@ class CodeGenerator:
     
     
         
-def compile_code(source_code, show_ast=False):
+def compile_code(source_code, output_file=None, show_ast=False):
     """Complete compilation pipeline"""
     # Parse
     ast = parse(source_code)
@@ -520,12 +520,27 @@ def compile_code(source_code, show_ast=False):
         print()
     
     # Code generation
-    print("Instructions:")
-    print(".start")
-    generator = CodeGenerator(symbol_table)
-    generator.generate(ast)
-    print("halt")
-    print(".end")
+    if output_file:
+        #Redirect print to file
+        import sys 
+        orignal_stdout=sys.stdout 
+        with open(output_file,'w') as f:
+            sys.stdout=f
+            print(".start")
+            generator = CodeGenerator(symbol_table)
+            generator.generate(ast)
+            print("halt")
+            print(".end")
+        sys.stdout=orignal_stdout
+        print(f"Code generated to {output_file}")
+    else:
+        #print to console
+        print("Instructions:")
+        print(".start")
+        generator = CodeGenerator(symbol_table)
+        generator.generate(ast)
+        print("halt")
+        print(".end")
 
 
 if __name__ == "__main__":
