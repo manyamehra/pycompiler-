@@ -3,7 +3,7 @@ import re
 # --- Mots-clés ---
 
 KEYWORDS = {
-   "int","debug","elif","int" ,"if", "else", "while", "def", "return", "True", "False", "None","int", "default","breaks","continue","void","do","for", 
+   "int","debug","elif","int" ,"if", "else", "while", "return", "True", "False", "None","int", "default","breaks","continue","void","do","for", 
 }
 # --- Spécification (les opérateurs à 2 chars AVANT ceux à 1 char) ---
 TOKEN_SPEC = [
@@ -33,6 +33,7 @@ TOKEN_SPEC = [
     ("tok_rbrack",   r"\]"),
     ("tok_semicolon",r";"),
     ("tok_colon",    r":"),
+     ("tok_comma", r","),
 
     ("tok_chiffre",     r"\d+"),
     ("tok_identifiant", r"[A-Za-z_][A-Za-z0-9_]*"),

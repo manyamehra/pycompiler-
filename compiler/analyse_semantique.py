@@ -111,11 +111,18 @@ class SemanticAnalyzer:
         node.address = self.symbol_table.lookup(node.chaine)
     
     def analyze_nd_func_decl(self, node):
-        # Nouvelle portée pour les parametre
+        # Enter new scope for parameters
         self.symbol_table.enter_scope()
-        for param_node in node.enfant[:-1]: #tous sauf le corps 
-            self.symbol_table.declare(param_node.chaine)
-        self.analyze(node.enfant[-1]) # corps
+        
+        # Only declare parameter nodes
+        for child in node.enfant:
+            if hasattr(child, 'is_parameter') and child.is_parameter:
+                self.symbol_table.declare(child.chaine)
+        
+        # Analyze the function body (last child)
+        if node.enfant:
+            self.analyze(node.enfant[-1])
+    
         self.symbol_table.leave_scope()
 
     def analyze_nd_func_call(self, node):
