@@ -500,6 +500,16 @@ class CodeGenerator:
             print("jump", L_start)
             print(f".{L_end}")
     
+    def gen_nd_and(self,node):
+        self.generate(node.enfant[0])
+        self.generate(node.enfant[1])
+        print("and")
+    
+    def gen_nd_or(self,node):
+        self.generate(node.enfant[0])
+        self.generate(node.enfant[1])
+        print("or")
+    
     
     
         

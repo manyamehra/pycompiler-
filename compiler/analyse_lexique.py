@@ -3,7 +3,7 @@ import re
 # --- Mots-clés ---
 
 KEYWORDS = {
-   "int","debug","elif","int" ,"if", "else", "while", "def", "return", "True", "False", "None","int", "AND","default","OR","breaks","continue","void","do","for"
+   "int","debug","elif","int" ,"if", "else", "while", "def", "return", "True", "False", "None","int", "default","breaks","continue","void","do","for", 
 }
 # --- Spécification (les opérateurs à 2 chars AVANT ceux à 1 char) ---
 TOKEN_SPEC = [
@@ -12,8 +12,8 @@ TOKEN_SPEC = [
     ("tok_le",       r"<="),
     ("tok_equalto",  r"=="),
     ("tok_notequal", r"!="),
-    ("tok_AND",      r"&&"),
-    ("tok_OR",       r"\|\|"),
+    ("tok_and",      r"&&"),
+    ("tok_or",       r"\|\|"),
 
     # --- 1 caractère ensuite ---
     ("tok_gt",       r">"),

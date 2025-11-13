@@ -66,6 +66,8 @@ ND_ADDRESS_OF = "nd_address_of"    # &x
 ND_DEREF = "nd_deref"              # *ptr (as expression)
 ND_DEREF_ASSIGN = "nd_deref_assign" # *ptr = value;
 ND_FOR_DECL = "nd_for_decl"  # Special node for for-loop declaration+init
+ND_AND="nd_and"
+ND_OR="nd_or"
 
 # Binary operators table
 BINOPS = {
@@ -80,6 +82,8 @@ BINOPS = {
     "tok_equalto": (5, "L", ND_EQ),
     "tok_notequal": (5, "L", ND_NE),
     "tok_egal": (5, "R", ND_ASSIGN), 
+    "tok_and": (3,"L",ND_AND),
+    "tok_or": (2,"L",ND_OR),
 }
 
 

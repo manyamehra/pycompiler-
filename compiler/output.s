@@ -1,24 +1,17 @@
 .start
-resn 6
-push 0
-push 0
-add
-push 10
-write
-push 0
+resn 2
 push 1
-add
-push 20
-write
-push 0
-push 0
-add
 dup
-set 5
+set 0
 drop 1
-get 5
-read
+push 0
+dup
+set 1
+drop 1
+get 0
+get 1
+or
 send
-drop 6
+drop 2
 halt
 .end

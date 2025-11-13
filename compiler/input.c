@@ -1,9 +1,7 @@
 {
-        int arr[5];
-        int* ptr;
-        arr[0] = 10;
-        arr[1] = 20;
-        ptr = &arr[0];
-        debug *ptr;
+    int a;
+    int b;
+    a=1;
+    b=0;
+    debug a || b;
     }
-
