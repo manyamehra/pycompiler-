@@ -225,71 +225,7 @@ class Parser:
         """Parse instructions"""
         # Function definition - simple approach without complex lookahead
         if self.check("tok_motscle") and self.lexer.peek()[1] in ["int", "void"]:
-            # Store current position for error reporting
-            start_line = self.lexer.line
-            
-            try:
-                # Parse return type and function name
-                return_type = self.accept("tok_motscle")[1]
-                func_name_token = self.accept("tok_identifiant")
-                
-                # If next token is '(', parse as function
-                if self.check("tok_lparen"):
-                    func_name = func_name_token[1]
-                    self.accept("tok_lparen")
-                    
-                    params = []
-                    if not self.check("tok_rparen"): #there are parameters
-                        while True: 
-                            # Parse parameter type (int, int*, etc.)
-                            param_type = self.accept("tok_motscle")[1]
-                            is_ptr_param = False
-                            if self.check("tok_star"):
-                                self.accept("tok_star")
-                                is_ptr_param = True
-                            param_name = self.accept("tok_identifiant")[1]
-                            params.append((param_type, param_name, is_ptr_param))
-                            
-                            if self.check("tok_rparen"):
-                                break
-                            self.accept("tok_comma")
-
-                    self.accept("tok_rparen")
-                    body = self.parse_instruction()
-                    func_node = create_node(ND_FUNC_DECL, chaine=func_name)
-                    func_node.return_type = return_type  # Store return type
-
-                    # Add parameters as child nodes
-                    for param_type, param_name, is_ptr in params:
-                        param_node = create_node(ND_IDENT, chaine=param_name)
-                        param_node.is_pointer = is_ptr
-                        param_node.param_type = param_type
-                        param_node.is_parameter = True  # Mark as parameter
-                        func_node.ajouter_enfant(param_node)
-
-                    func_node.ajouter_enfant(body)
-                    return func_node
-                else:
-                    # Not a function - it's a variable declaration
-                    # We already consumed "int" and identifier, so parse as variable
-                    # Check if it's an array declaration: int arr[10];
-                    if self.check("tok_lbrack"):
-                        self.accept("tok_lbrack")
-                        size_token = self.accept("tok_chiffre")
-                        self.accept("tok_rbrack")
-                        self.accept("tok_semicolon")
-                        
-                        node = create_node(ND_ARRAY_DECL, chaine=func_name_token[1])
-                        node.array_size = size_token[1]
-                        return node
-                    else:
-                        # Regular variable
-                        self.accept("tok_semicolon")
-                        return create_node(ND_DECL, chaine=func_name_token[1])
-                        
-            except SyntaxError as e:
-                raise SyntaxError(f"Syntax error at line {start_line}: {str(e)}")
-
+            return self._parse_type_based_instruction()
         # Debug statement
         if self.check("tok_motscle") and self.lexer.peek()[1] == "debug":
             self.accept("tok_motscle")
@@ -456,6 +392,89 @@ class Parser:
         self.accept("tok_semicolon")
         return create_node(ND_DROP, children=[expr])
 
+    def _parse_type_based_instruction(self):
+        """Parse declarations that start with int/void - could be function or variable"""
+        start_line = self.lexer.line
+        
+        # Parse the type
+        base_type = self.accept("tok_motscle")[1]
+        
+        # Check for pointer
+        is_pointer = False
+        if self.check("tok_star"):
+            self.accept("tok_star")
+            is_pointer = True
+        
+        # Get the identifier
+        if not self.check("tok_identifiant"):
+            raise SyntaxError(f"Expected identifier after type, got: {self.lexer.peek()[0]} at line {self.lexer.line}")
+        
+        ident_token = self.accept("tok_identifiant")
+        ident_name = ident_token[1]
+        
+        # Check if this is a function (has parentheses next)
+        if self.check("tok_lparen"):
+            # FUNCTION DECLARATION
+            self.accept("tok_lparen")
+            
+            params = []
+            if not self.check("tok_rparen"):
+                while True:
+                    # Parse parameter type
+                    param_type = self.accept("tok_motscle")[1]
+                    is_ptr_param = False
+                    if self.check("tok_star"):
+                        self.accept("tok_star")
+                        is_ptr_param = True
+                    
+                    # Parse parameter name
+                    param_name = self.accept("tok_identifiant")[1]
+                    params.append((param_type, param_name, is_ptr_param))
+                    
+                    if self.check("tok_rparen"):
+                        break
+                    self.accept("tok_comma")
+            
+            self.accept("tok_rparen")
+            body = self.parse_instruction()
+            
+            func_node = create_node(ND_FUNC_DECL, chaine=ident_name)
+            func_node.return_type = base_type
+            
+            for param_type, param_name, is_ptr in params:
+                param_node = create_node(ND_IDENT, chaine=param_name)
+                param_node.is_pointer = is_ptr
+                param_node.param_type = param_type
+                param_node.is_parameter = True
+                func_node.ajouter_enfant(param_node)
+            
+            func_node.ajouter_enfant(body)
+            return func_node
+        
+        else:
+            # VARIABLE DECLARATION (regular, pointer, or array)
+            # Check if it's an array declaration
+            if self.check("tok_lbrack"):
+                if is_pointer:
+                    raise SyntaxError("Cannot have pointer to array (for now)")
+                
+                self.accept("tok_lbrack")
+                size_token = self.accept("tok_chiffre")
+                self.accept("tok_rbrack")
+                self.accept("tok_semicolon")
+                
+                node = create_node(ND_ARRAY_DECL, chaine=ident_name)
+                node.array_size = size_token[1]
+                return node
+            else:
+                # Regular variable or pointer declaration
+                self.accept("tok_semicolon")
+                if is_pointer:
+                    node = create_node(ND_PTR_DECL, chaine=ident_name)
+                    node.is_pointer = True
+                    return node
+                else:
+                    return create_node(ND_DECL, chaine=ident_name)
 
 def parse(source_code):
     """Parse source code and return AST"""

@@ -585,17 +585,6 @@ if __name__ == "__main__":
     print("\n--- Test 10: simple for ---")
     compile_code("{ int i; for (i = 0; i < 5; i = i + 1) { debug i; } }", show_ast=True)
     
-    print("\n--- Test 11: fonction test  ---")
-    compile_code("""{ 
-    def addition(x) 
-    { 
-        return x + x; 
-    }
-        int y;
-        y = addition(4);
-        debug y;
-    }""", show_ast=True)
-
     print("\n--- Test: Array with Loop ---")
     compile_code("""
     {
