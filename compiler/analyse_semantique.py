@@ -675,3 +675,29 @@ if __name__ == "__main__":
     print("\n Test: Boucle for (decl var erronée)")
     compile_code("""
     {for(int i =0; i<5; i=i+1){}}""", show_ast=True)
+    print("\n--- Test: Function with arrays ---")
+    compile_code("""
+        int sumArray(int size) {
+            int arr[10];
+            int sum;
+            int i;
+            sum = 0;
+            for(i = 0; i < size; i = i + 1) {
+                arr[i] = i;
+                sum = sum + arr[i];
+            }
+            return sum;
+        }
+        """, show_ast=True)
+    print("\n--- Test: if with && ---")
+    compile_code("""
+        int main() {
+            int a;
+            int b;
+            a=0;b=1;
+            if (a&&b)
+                 {
+                 debug a;
+                 }
+        }
+        """, show_ast=True)
